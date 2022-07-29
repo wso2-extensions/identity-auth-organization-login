@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2022, WSO2 Inc. (http://www.wso2.com).
+ * Copyright (c) 2022, WSO2 LLC. (http://www.wso2.com).
  *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
@@ -49,7 +49,7 @@ public class AuthenticatorConstants {
     public static final String REQUEST_ORG_SELECT_PAGE_URL = "authenticationendpoint/select_org.do";
     public static final String REQUEST_ORG_PAGE_URL_CONFIG = "RequestOrganizationPage";
     public static final String INBOUND_AUTH_TYPE_OAUTH = "oauth2";
-    
+
     public static final String EQUAL_SIGN = "=";
     public static final String AMPERSAND_SIGN = "&";
 }

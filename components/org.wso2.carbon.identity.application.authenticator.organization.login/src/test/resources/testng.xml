@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2022, WSO2 Inc. (http://www.wso2.com).
+  ~ Copyright (c) 2022, WSO2 LLC. (http://www.wso2.com).
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 
-<suite name="org.wso2.carbon.identity.organization.management.application.authn">
+<suite name="org.wso2.carbon.identity.application.authenticator.login">
 
-    <test name="organization-management-application-authn-tests">
+    <test name="application-authenticator-organization-login-tests">
         <classes>
             <class name="org.wso2.carbon.identity.application.authenticator.organization.login.OrganizationAuthenticatorTest"/>
         </classes>
