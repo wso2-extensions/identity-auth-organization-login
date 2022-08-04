@@ -183,7 +183,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         // If the shared application cannot be found for the particular organization,
         // will set a "organizationLoginFailure" property in the context and will check this in Authentication Process.
         try {
-            sharedApplication = getSharedApplication(application, ownerOrgId, sharedOrgId);
+            sharedApplication = getOrgApplicationManager()
+                    .resolveSharedApplication(application, ownerOrgId, sharedOrgId);
         } catch (OrganizationManagementClientException e) {
             context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Organization is not associated with this application");
             redirectToOrgNameCapture(response, context);
@@ -363,23 +364,6 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private void addQueryParam(StringBuilder builder, String query, String param) throws UnsupportedEncodingException {
 
         builder.append(AMPERSAND_SIGN).append(query).append(EQUAL_SIGN).append(urlEncode(param));
-    }
-
-    /**
-     * Returns the shared application details based on the given organization name, main application and owner
-     * organization of the main application.
-     *
-     * @param application Main application.
-     * @param ownerOrgId  Identifier of the organization which owns the main application.
-     * @param sharedOrgId Identifier of the organization which owns the shared application.
-     * @return shared application, instance of {@link ServiceProvider}.
-     * @throws OrganizationManagementException if the application, owner Tenant Domain is not found,
-     * authentication failed exception will be thrown.
-     */
-    private ServiceProvider getSharedApplication(String application, String ownerOrgId, String sharedOrgId)
-            throws OrganizationManagementException {
-
-        return getOrgApplicationManager().resolveSharedApplication(application, ownerOrgId, sharedOrgId);
     }
 
     /**
