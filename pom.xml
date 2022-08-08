@@ -291,7 +291,7 @@
 
     <properties>
 
-        <carbon.identity.org.mgt.version>1.0.67</carbon.identity.org.mgt.version>
+        <carbon.identity.org.mgt.version>1.1.2</carbon.identity.org.mgt.version>
 
         <!-- Carbon kernel version -->
         <carbon.kernel.version>4.7.0</carbon.kernel.version>
@@ -324,8 +324,6 @@
         <apache.felix.scr.ds.annotations.version>1.2.4</apache.felix.scr.ds.annotations.version>
         <pax.logging.api.version>1.10.1</pax.logging.api.version>
 
-        <identity.organization.management.exp.pkg.version>${project.version}
-        </identity.organization.management.exp.pkg.version>
         <org.wso2.identity.organization.mgt.imp.pkg.version.range>[1.0.0,2.0.0)
         </org.wso2.identity.organization.mgt.imp.pkg.version.range>
 
@@ -336,16 +334,11 @@
         <carbon.identity.framework.version>5.21.0</carbon.identity.framework.version>
         <carbon.identity.package.import.version.range>[5.20.0, 6.0.0)
         </carbon.identity.package.import.version.range>
-        <carbon.identity.scim2.package.import.version.range>[1.5.122, 3.1.0)
-        </carbon.identity.scim2.package.import.version.range>
-        <charon3.core.import.version.range>[3.4.22, 4.1.0)</charon3.core.import.version.range>
-        <carbon.identity.inbound.provisioning.scim2.version>1.5.122
-        </carbon.identity.inbound.provisioning.scim2.version>
 
         <identity.extension.utils.version>1.0.8</identity.extension.utils.version>
         <identity.extension.utils.import.version.range>[1.0.8, 2.0.0)</identity.extension.utils.import.version.range>
-        <identity.inbound.auth.oauth.version>6.7.116</identity.inbound.auth.oauth.version>
-        <identity.inbound.auth.oauth.import.version.range>[6.7.116, 6.8.0)</identity.inbound.auth.oauth.import.version.range>
+        <identity.inbound.auth.oauth.version>6.8.0</identity.inbound.auth.oauth.version>
+        <identity.inbound.auth.oauth.import.version.range>[6.8.0, 6.9.0)</identity.inbound.auth.oauth.import.version.range>
         <identity.outbound.auth.oidc.version>5.7.2</identity.outbound.auth.oidc.version>
         <identity.outbound.auth.oidc.import.version.range>[5.7.2, 5.9.0)</identity.outbound.auth.oidc.import.version.range>
 
@@ -354,10 +347,6 @@
 
         <carbon.database.utils.version>2.0.13</carbon.database.utils.version>
         <org.wso2.carbon.database.utils.version.range>[2.0.0,3.0.0)</org.wso2.carbon.database.utils.version.range>
-
-        <carbon.identity.auth.version>1.4.47</carbon.identity.auth.version>
-        <carbon.identity.auth.imp.pkg.version.range>[1.4.0,2.0.0)</carbon.identity.auth.imp.pkg.version.range>
-        <tomcat.version>9.0.31.wso2v1</tomcat.version>
 
         <org.apache.commons.lang.imp.pkg.version.range>[2.6,3)</org.apache.commons.lang.imp.pkg.version.range>
         <org.apache.commons.logging.imp.pkg.version.range>[1.2,2)</org.apache.commons.logging.imp.pkg.version.range>
