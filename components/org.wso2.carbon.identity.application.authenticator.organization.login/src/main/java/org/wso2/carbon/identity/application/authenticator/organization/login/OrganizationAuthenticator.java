@@ -155,6 +155,14 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         }
     }
 
+    protected String getScope(String scope, Map<String, String> authenticatorProperties) {
+
+        if (StringUtils.isBlank(scope)) {
+            scope = "openid email profile phone address";
+        }
+        return scope;
+    }
+
     /**
      * Process the authenticator properties based on the user information.
      *
