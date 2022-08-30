@@ -70,13 +70,14 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_FRIENDLY_NAME;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_NAME;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_PARAMETER;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHORIZATION_ENDPOINT_TENANTED_PATH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.EQUAL_SIGN;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ERROR_MESSAGE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.IDP_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_ATTRIBUTE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_LOGIN_FAILURE;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_PLACEHOLDER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_USER_ATTRIBUTE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_COUNT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DESCRIPTION_PARAMETER;
@@ -85,13 +86,11 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL_CONFIG;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_SELECT_PAGE_URL;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.TENANT_PLACEHOLDER;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.TOKEN_ENDPOINT_TENANTED_PATH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.TOKEN_ENDPOINT_ORGANIZATION_PATH;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.OAuth2.CALLBACK_URL;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_REQUEST_ORGANIZATION_REDIRECT;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_ORGANIZATION_DOMAIN_FROM_TENANT_DOMAIN;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_ORGANIZATION_LOGIN;
-import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_TENANT_DOMAIN_FROM_ORGANIZATION_DOMAIN;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_APPLICATION;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_ORGANIZATION_NAME_BY_ID;
@@ -155,6 +154,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         }
     }
 
+    @Override
     protected String getScope(String scope, Map<String, String> authenticatorProperties) {
 
         if (StringUtils.isBlank(scope)) {
@@ -166,7 +166,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     /**
      * Process the authenticator properties based on the user information.
      *
-     * @param context The authentication context.
+     * @param context  The authentication context.
      * @param response servlet response.
      * @throws AuthenticationFailedException thrown when resolving organization login authenticator properties.
      */
@@ -209,12 +209,11 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             String clientId = oidcConfigurations.getInboundAuthKey();
             OAuthConsumerAppDTO oauthApp = getOAuthAdminService().getOAuthApplicationData(clientId);
 
-            String sharedOrgTenantDomain = getTenantDomain(sharedOrgId);
             authenticatorProperties.put(CLIENT_ID, clientId);
             authenticatorProperties.put(CLIENT_SECRET, oauthApp.getOauthConsumerSecret());
             authenticatorProperties.put(ORGANIZATION_ATTRIBUTE, organizationName);
-            authenticatorProperties.put(OAUTH2_AUTHZ_URL, getAuthorizationEndpoint(sharedOrgTenantDomain));
-            authenticatorProperties.put(OAUTH2_TOKEN_URL, getTokenEndpoint(sharedOrgTenantDomain));
+            authenticatorProperties.put(OAUTH2_AUTHZ_URL, getAuthorizationEndpoint(sharedOrgId));
+            authenticatorProperties.put(OAUTH2_TOKEN_URL, getTokenEndpoint(sharedOrgId));
             authenticatorProperties.put(CALLBACK_URL, oauthApp.getCallbackUrl());
 
         } catch (IdentityOAuthAdminException | URLBuilderException e) {
@@ -230,15 +229,6 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             throw handleAuthFailures(ERROR_CODE_ORGANIZATION_NOT_FOUND_FOR_TENANT, e);
         } catch (OrganizationManagementException e) {
             throw handleAuthFailures(ERROR_CODE_ERROR_RESOLVING_ORGANIZATION_DOMAIN_FROM_TENANT_DOMAIN, e);
-        }
-    }
-
-    private String getTenantDomain(String organizationID) throws AuthenticationFailedException {
-
-        try {
-            return getOrganizationManager().resolveTenantDomain(organizationID);
-        } catch (OrganizationManagementException e) {
-            throw handleAuthFailures(ERROR_CODE_ERROR_RESOLVING_TENANT_DOMAIN_FROM_ORGANIZATION_DOMAIN);
         }
     }
 
@@ -408,25 +398,26 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     /**
      * Returns the authorization endpoint url for a given organization.
      *
-     * @param tenantDomain Tenant domain of the organization.
+     * @param organizationId Id of the organization.
      * @return The authorization endpoint URL.
      */
-    private String getAuthorizationEndpoint(String tenantDomain) throws URLBuilderException {
+    private String getAuthorizationEndpoint(String organizationId) throws URLBuilderException {
 
-        return ServiceURLBuilder.create().addPath(AUTHORIZATION_ENDPOINT_TENANTED_PATH.replace(TENANT_PLACEHOLDER,
-                tenantDomain)).build().getAbsolutePublicURL();
+        return ServiceURLBuilder.create()
+                .addPath(AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH.replace(ORGANIZATION_PLACEHOLDER, organizationId))
+                .build().getAbsolutePublicURL();
     }
 
     /**
      * Returns the token endpoint url for a given organization.
      *
-     * @param tenantDomain Tenant domain of the organization.
+     * @param organizationId Id of the organization.
      * @return The token endpoint URL.
      */
-    private String getTokenEndpoint(String tenantDomain) throws URLBuilderException {
+    private String getTokenEndpoint(String organizationId) throws URLBuilderException {
 
-        return ServiceURLBuilder.create().addPath(TOKEN_ENDPOINT_TENANTED_PATH.replace(TENANT_PLACEHOLDER,
-                tenantDomain)).build().getAbsolutePublicURL();
+        return ServiceURLBuilder.create().addPath(TOKEN_ENDPOINT_ORGANIZATION_PATH.replace(ORGANIZATION_PLACEHOLDER,
+                organizationId)).build().getAbsolutePublicURL();
     }
 
     /**
