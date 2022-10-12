@@ -129,33 +129,21 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     protected void initiateAuthenticationRequest(HttpServletRequest request, HttpServletResponse response,
                                                  AuthenticationContext context) throws AuthenticationFailedException {
 
-        // Removed the property when setting it in shared application client exception check
-        context.removeProperty(ORGANIZATION_LOGIN_FAILURE);
-        resolvePropertiesForAuthenticator(context, response);
-        // Check if the "organizationLoginFailure" property in the context,
-        // when added in shared application client exception check.
-        if (!context.getProperties().containsKey(ORGANIZATION_LOGIN_FAILURE)) {
-            super.initiateAuthenticationRequest(request, response, context);
-        }
+        resolvePropertiesForAuthenticator(context);
+        super.initiateAuthenticationRequest(request, response, context);
     }
 
     @Override
     protected void processAuthenticationResponse(HttpServletRequest request, HttpServletResponse response,
                                                  AuthenticationContext context) throws AuthenticationFailedException {
 
-        // Removed the property when setting it in shared application client exception check
-        context.removeProperty(ORGANIZATION_LOGIN_FAILURE);
-        resolvePropertiesForAuthenticator(context, response);
-        // Check if the "organizationLoginFailure" property in the context,
-        // when added in shared application client exception check.
-        if (!context.getProperties().containsKey(ORGANIZATION_LOGIN_FAILURE)) {
-            super.processAuthenticationResponse(request, response, context);
+        resolvePropertiesForAuthenticator(context);
+        super.processAuthenticationResponse(request, response, context);
 
-            // Add organization name to the user attributes.
-            context.getSubject().getUserAttributes()
-                    .put(ClaimMapping.build(ORGANIZATION_USER_ATTRIBUTE, ORGANIZATION_USER_ATTRIBUTE, null, false),
-                            context.getAuthenticatorProperties().get(ORGANIZATION_ATTRIBUTE));
-        }
+        // Add organization name to the user attributes.
+        context.getSubject().getUserAttributes()
+                .put(ClaimMapping.build(ORGANIZATION_USER_ATTRIBUTE, ORGANIZATION_USER_ATTRIBUTE, null, false),
+                        context.getAuthenticatorProperties().get(ORGANIZATION_ATTRIBUTE));
     }
 
     @Override
@@ -170,40 +158,28 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     /**
      * Process the authenticator properties based on the user information.
      *
-     * @param context  The authentication context.
-     * @param response servlet response.
+     * @param context The authentication context.
      * @throws AuthenticationFailedException thrown when resolving organization login authenticator properties.
      */
-    private void resolvePropertiesForAuthenticator(AuthenticationContext context, HttpServletResponse response)
-            throws AuthenticationFailedException {
+    private void resolvePropertiesForAuthenticator(AuthenticationContext context) throws AuthenticationFailedException {
 
         Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
 
-        String application = context.getServiceProviderName();
-        String ownerTenantDomain = context.getTenantDomain();
-
-        if (!context.getProperties().containsKey(ORG_PARAMETER) || !context.getProperties()
-                .containsKey(ORG_ID_PARAMETER)) {
-            throw handleAuthFailures(ERROR_CODE_ORG_PARAMETERS_NOT_RESOLVED);
-        }
-        String organizationName = context.getProperty(ORG_PARAMETER).toString();
-
-        // Get the shared service provider based on the requested organization.
-        String ownerOrgId = getOrgIdByTenantDomain(ownerTenantDomain);
-        String sharedOrgId = context.getProperty(ORG_ID_PARAMETER).toString();
-        ServiceProvider sharedApplication;
-        // If the shared application cannot be found for the particular organization,
-        // will set a "organizationLoginFailure" property in the context and will check this in Authentication Process.
         try {
-            sharedApplication = getSharedApplication(application, ownerOrgId, sharedOrgId);
-        } catch (OrganizationManagementClientException e) {
-            context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Organization is not associated with this application");
-            redirectToOrgNameCapture(response, context);
-            return;
-        } catch (OrganizationManagementException e) {
-            throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_APPLICATION, e);
-        }
-        try {
+            String application = context.getServiceProviderName();
+            String ownerTenantDomain = context.getTenantDomain();
+
+            if (!context.getProperties().containsKey(ORG_PARAMETER) || !context.getProperties()
+                    .containsKey(ORG_ID_PARAMETER)) {
+                throw handleAuthFailures(ERROR_CODE_ORG_PARAMETERS_NOT_RESOLVED);
+            }
+            String organizationName = context.getProperty(ORG_PARAMETER).toString();
+
+            // Get the shared service provider based on the requested organization.
+            String ownerOrgId = getOrgIdByTenantDomain(ownerTenantDomain);
+            String sharedOrgId = context.getProperty(ORG_ID_PARAMETER).toString();
+            ServiceProvider sharedApplication = getSharedApplication(application, ownerOrgId, sharedOrgId);
+
             InboundAuthenticationRequestConfig oidcConfigurations =
                     getAuthenticationConfig(sharedApplication).orElseThrow(
                             () -> handleAuthFailures(ERROR_CODE_INVALID_APPLICATION));
@@ -421,13 +397,17 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
      * @param ownerOrgId  Identifier of the organization which owns the main application.
      * @param sharedOrgId Identifier of the organization which owns the shared application.
      * @return shared application, instance of {@link ServiceProvider}.
-     * @throws OrganizationManagementException if the application, owner Tenant Domain is not found,
-     * authentication failed exception will be thrown.
+     * @throws AuthenticationFailedException if the application is not found, authentication failed exception will be
+     *                                       thrown.
      */
     private ServiceProvider getSharedApplication(String application, String ownerOrgId, String sharedOrgId)
-            throws OrganizationManagementException {
+            throws AuthenticationFailedException {
 
-        return getOrgApplicationManager().resolveSharedApplication(application, ownerOrgId, sharedOrgId);
+        try {
+            return getOrgApplicationManager().resolveSharedApplication(application, ownerOrgId, sharedOrgId);
+        } catch (OrganizationManagementException e) {
+            throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_APPLICATION, e);
+        }
     }
 
     /**
