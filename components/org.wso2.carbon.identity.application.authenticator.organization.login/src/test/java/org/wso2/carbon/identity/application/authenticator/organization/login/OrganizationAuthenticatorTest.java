@@ -31,12 +31,14 @@ import org.wso2.carbon.identity.application.authenticator.organization.login.int
 import org.wso2.carbon.identity.application.common.model.InboundAuthenticationConfig;
 import org.wso2.carbon.identity.application.common.model.InboundAuthenticationRequestConfig;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
+import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.common.testng.WithAxisConfiguration;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
 import org.wso2.carbon.identity.oauth.dto.OAuthConsumerAppDTO;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementServerException;
+import org.wso2.carbon.identity.organization.management.service.model.BasicOrganization;
 import org.wso2.carbon.identity.organization.management.service.model.Organization;
 import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
@@ -94,6 +96,7 @@ public class OrganizationAuthenticatorTest {
     private AuthenticationContext mockAuthenticationContext;
     private RealmService mockRealmService;
     private OrganizationManager mockOrganizationManager;
+    private ApplicationManagementService mockApplicationManagementService;
     private OrgApplicationManager mockOrgApplicationManager;
     private ServiceProvider mockServiceProvider;
     private InboundAuthenticationConfig mockInboundAuthenticationConfig;
@@ -101,6 +104,7 @@ public class OrganizationAuthenticatorTest {
     private OAuthConsumerAppDTO mockOAuthConsumerAppDTO;
     private ExternalIdPConfig mockExternalIdPConfig;
     private Organization mockOrganization;
+    private BasicOrganization mockBasicOrganization;
     private OrganizationAuthenticator organizationAuthenticator;
     private AuthenticatorDataHolder authenticatorDataHolder;
 
@@ -113,12 +117,14 @@ public class OrganizationAuthenticatorTest {
         mockRealmService = mock(RealmService.class);
         mockOrganizationManager = mock(OrganizationManager.class);
         mockOrgApplicationManager = mock(OrgApplicationManager.class);
+        mockApplicationManagementService = mock(ApplicationManagementService.class);
         mockServiceProvider = mock(ServiceProvider.class);
         mockInboundAuthenticationConfig = mock(InboundAuthenticationConfig.class);
         mockOAuthAdminServiceImpl = mock(OAuthAdminServiceImpl.class);
         mockOAuthConsumerAppDTO = mock(OAuthConsumerAppDTO.class);
         mockExternalIdPConfig = mock(ExternalIdPConfig.class);
         mockOrganization = mock(Organization.class);
+        mockBasicOrganization = mock(BasicOrganization.class);
 
         organizationAuthenticator = new OrganizationAuthenticator();
         authenticatorParamProperties = new HashMap<>();
@@ -130,6 +136,7 @@ public class OrganizationAuthenticatorTest {
         authenticatorDataHolder.setOrganizationManager(mockOrganizationManager);
         authenticatorDataHolder.setOrgApplicationManager(mockOrgApplicationManager);
         authenticatorDataHolder.setOAuthAdminService(mockOAuthAdminServiceImpl);
+        authenticatorDataHolder.setApplicationManagementService(mockApplicationManagementService);
         Tenant tenant = mock(Tenant.class);
         TenantManager mockTenantManager = mock(TenantManager.class);
         when(mockRealmService.getTenantManager()).thenReturn(mockTenantManager);
@@ -229,12 +236,20 @@ public class OrganizationAuthenticatorTest {
 
         when(mockOrganization.getId()).thenReturn(orgId);
         when(mockOrganization.getName()).thenReturn(org);
+        when(mockBasicOrganization.getId()).thenReturn(orgId);
         when(mockOrganization.getDescription()).thenReturn("description");
         when(mockOrganizationManager.getOrganizationsByName(anyString()))
                 .thenReturn(Arrays.asList(mockOrganization, mockOrganization));
+        when(mockOrganizationManager.resolveOrganizationId(anyString())).thenReturn(saasAppOwnedOrgId);
+        when(mockApplicationManagementService.getServiceProvider(anyString(), anyString()))
+                .thenReturn(mockServiceProvider);
+        when(mockOrgApplicationManager.getApplicationSharedOrganizations(anyString(), anyString())).
+                thenReturn(Arrays.asList(mockBasicOrganization, mockBasicOrganization));
 
         when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
         when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        when(mockAuthenticationContext.getServiceProviderName()).thenReturn(saasApp);
+        when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
         mockCarbonContext();
 
