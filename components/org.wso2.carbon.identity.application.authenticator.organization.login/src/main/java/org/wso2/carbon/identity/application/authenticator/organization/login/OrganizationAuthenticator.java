@@ -198,7 +198,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             sharedApplication = getOrgApplicationManager()
                     .resolveSharedApplication(application, ownerOrgId, sharedOrgId);
         } catch (OrganizationManagementClientException e) {
-            context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Organization is not associated with this application.");
+            context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Organization is not associated with this application");
             redirectToOrgNameCapture(response, context);
             return;
         } catch (OrganizationManagementException e) {
