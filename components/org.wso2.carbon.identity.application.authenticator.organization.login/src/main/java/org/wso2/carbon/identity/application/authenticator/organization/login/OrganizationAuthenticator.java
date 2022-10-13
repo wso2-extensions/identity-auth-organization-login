@@ -49,7 +49,6 @@ import org.wso2.carbon.identity.organization.management.service.OrganizationMana
 import org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementClientException;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
-import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementServerException;
 import org.wso2.carbon.identity.organization.management.service.model.BasicOrganization;
 import org.wso2.carbon.identity.organization.management.service.model.Organization;
 
@@ -181,7 +180,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
 
         String application = context.getServiceProviderName();
-        String ownerTenantDomain = context.getTenantDomain();
+        String appResideTenantDomain = context.getTenantDomain();
 
         if (!context.getProperties().containsKey(ORG_PARAMETER) || !context.getProperties()
                 .containsKey(ORG_ID_PARAMETER)) {
@@ -190,14 +189,14 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         String organizationName = context.getProperty(ORG_PARAMETER).toString();
 
         // Get the shared service provider based on the requested organization.
-        String ownerOrgId = getOrgIdByTenantDomain(ownerTenantDomain);
+        String appResideOrgId = getOrgIdByTenantDomain(appResideTenantDomain);
         String sharedOrgId = context.getProperty(ORG_ID_PARAMETER).toString();
         ServiceProvider sharedApplication;
         // If the shared application cannot be found for the particular organization,
         // will set a "organizationLoginFailure" property in the context and will check this in Authentication Process.
         try {
             sharedApplication = getOrgApplicationManager()
-                    .resolveSharedApplication(application, ownerOrgId, sharedOrgId);
+                    .resolveSharedApplication(application, appResideOrgId, sharedOrgId);
         } catch (OrganizationManagementClientException e) {
             context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Organization is not associated with this application.");
             redirectToOrgNameCapture(response, context);
@@ -285,7 +284,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         try {
             List<Organization> organizations = getOrganizationManager().getOrganizationsByName(organizationName);
             List<String> mainAppSharedOrganizations =
-                    getMainApplicationSharedOrganizations(context.getServiceProviderName(), context.getTenantDomain());
+                    getMainApplicationSharedOrganizationIds(context.getServiceProviderName(),
+                            context.getTenantDomain());
             organizations = organizations.stream()
                     .filter(organization -> mainAppSharedOrganizations.contains(organization.getId()))
                     .collect(Collectors.toList());
@@ -309,23 +309,25 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         return false;
     }
 
-    private List<String> getMainApplicationSharedOrganizations(String mainAppName, String ownerTenantDomain)
-            throws AuthenticationFailedException, OrganizationManagementServerException {
+    /**
+     * @param mainAppName               The SaaS application name.
+     * @param mainAppResideTenantDomain The tenant domain of the SaaS application resides.
+     * @return List of organization IDs the main application is shared.
+     * @throws AuthenticationFailedException On error when retrieving the application shared organization IDs.
+     */
+    private List<String> getMainApplicationSharedOrganizationIds(String mainAppName, String mainAppResideTenantDomain)
+            throws AuthenticationFailedException {
 
-        String ownerOrgId = getOrgIdByTenantDomain(ownerTenantDomain);
+        String mainAppResideOrgId = getOrgIdByTenantDomain(mainAppResideTenantDomain);
         ServiceProvider mainApplication;
         try {
             mainApplication = Optional.ofNullable(
-                            getApplicationManagementService().getServiceProvider(mainAppName, ownerTenantDomain))
+                    getApplicationManagementService().getServiceProvider(mainAppName, mainAppResideTenantDomain))
                     .orElseThrow(() -> handleAuthFailures(ERROR_CODE_INVALID_APPLICATION));
-        } catch (IdentityApplicationManagementException e) {
-            throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME, e);
-        }
-        try {
-            return getOrgApplicationManager().getApplicationSharedOrganizations(ownerOrgId,
+            return getOrgApplicationManager().getApplicationSharedOrganizations(mainAppResideOrgId,
                             mainApplication.getApplicationResourceId()).stream().map(BasicOrganization::getId)
                     .collect(Collectors.toList());
-        } catch (OrganizationManagementException e) {
+        } catch (IdentityApplicationManagementException | OrganizationManagementException e) {
             throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME, e);
         }
     }
