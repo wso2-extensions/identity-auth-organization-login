@@ -32,11 +32,13 @@ import org.wso2.carbon.identity.application.authentication.framework.exception.L
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.oidc.OpenIDConnectAuthenticator;
 import org.wso2.carbon.identity.application.authenticator.organization.login.internal.AuthenticatorDataHolder;
+import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.InboundAuthenticationConfig;
 import org.wso2.carbon.identity.application.common.model.InboundAuthenticationRequestConfig;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
+import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.oauth.IdentityOAuthAdminException;
@@ -47,6 +49,7 @@ import org.wso2.carbon.identity.organization.management.service.OrganizationMana
 import org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementClientException;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
+import org.wso2.carbon.identity.organization.management.service.model.BasicOrganization;
 import org.wso2.carbon.identity.organization.management.service.model.Organization;
 
 import java.io.IOException;
@@ -57,6 +60,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -176,7 +180,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
 
         String application = context.getServiceProviderName();
-        String ownerTenantDomain = context.getTenantDomain();
+        String appResideTenantDomain = context.getTenantDomain();
 
         if (!context.getProperties().containsKey(ORG_PARAMETER) || !context.getProperties()
                 .containsKey(ORG_ID_PARAMETER)) {
@@ -185,14 +189,14 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         String organizationName = context.getProperty(ORG_PARAMETER).toString();
 
         // Get the shared service provider based on the requested organization.
-        String ownerOrgId = getOrgIdByTenantDomain(ownerTenantDomain);
+        String appResideOrgId = getOrgIdByTenantDomain(appResideTenantDomain);
         String sharedOrgId = context.getProperty(ORG_ID_PARAMETER).toString();
         ServiceProvider sharedApplication;
         // If the shared application cannot be found for the particular organization,
         // will set a "organizationLoginFailure" property in the context and will check this in Authentication Process.
         try {
             sharedApplication = getOrgApplicationManager()
-                    .resolveSharedApplication(application, ownerOrgId, sharedOrgId);
+                    .resolveSharedApplication(application, appResideOrgId, sharedOrgId);
         } catch (OrganizationManagementClientException e) {
             context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Organization is not associated with this application.");
             redirectToOrgNameCapture(response, context);
@@ -279,12 +283,22 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
         try {
             List<Organization> organizations = getOrganizationManager().getOrganizationsByName(organizationName);
+            List<String> mainAppSharedOrganizations =
+                    getMainApplicationSharedOrganizationIds(context.getServiceProviderName(),
+                            context.getTenantDomain());
+            organizations = organizations.stream()
+                    .filter(organization -> mainAppSharedOrganizations.contains(organization.getId()))
+                    .collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(organizations)) {
                 if (organizations.size() == 1) {
                     context.setProperty(ORG_ID_PARAMETER, organizations.get(0).getId());
                     return true;
                 }
                 redirectToSelectOrganization(response, context, organizations);
+            } else {
+                context.setProperty(ORGANIZATION_LOGIN_FAILURE,
+                        "Organization is not associated with this application.");
+                redirectToOrgNameCapture(response, context);
             }
         } catch (OrganizationManagementClientException e) {
             context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Invalid Organization Name");
@@ -293,6 +307,29 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME, e);
         }
         return false;
+    }
+
+    /**
+     * @param mainAppName               The SaaS application name.
+     * @param mainAppResideTenantDomain The tenant domain of the SaaS application resides.
+     * @return List of organization IDs the main application is shared.
+     * @throws AuthenticationFailedException On error when retrieving the application shared organization IDs.
+     */
+    private List<String> getMainApplicationSharedOrganizationIds(String mainAppName, String mainAppResideTenantDomain)
+            throws AuthenticationFailedException {
+
+        String mainAppResideOrgId = getOrgIdByTenantDomain(mainAppResideTenantDomain);
+        ServiceProvider mainApplication;
+        try {
+            mainApplication = Optional.ofNullable(
+                    getApplicationManagementService().getServiceProvider(mainAppName, mainAppResideTenantDomain))
+                    .orElseThrow(() -> handleAuthFailures(ERROR_CODE_INVALID_APPLICATION));
+            return getOrgApplicationManager().getApplicationSharedOrganizations(mainAppResideOrgId,
+                            mainApplication.getApplicationResourceId()).stream().map(BasicOrganization::getId)
+                    .collect(Collectors.toList());
+        } catch (IdentityApplicationManagementException | OrganizationManagementException e) {
+            throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME, e);
+        }
     }
 
     /**
@@ -476,6 +513,11 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             log.debug(error.getMessage());
         }
         return new AuthenticationFailedException(error.getCode(), error.getMessage(), e);
+    }
+
+    private ApplicationManagementService getApplicationManagementService() {
+
+        return AuthenticatorDataHolder.getInstance().getApplicationManagementService();
     }
 
     private OAuthAdminServiceImpl getOAuthAdminService() {
