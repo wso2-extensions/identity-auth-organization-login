@@ -77,12 +77,12 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.EQUAL_SIGN;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ERROR_MESSAGE;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.FEDERATED_ORG_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.IDP_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_ATTRIBUTE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_LOGIN_FAILURE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_PLACEHOLDER;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_USER_ATTRIBUTE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_COUNT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DESCRIPTION_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
@@ -153,7 +153,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
             // Add organization name to the user attributes.
             context.getSubject().getUserAttributes()
-                    .put(ClaimMapping.build(ORGANIZATION_USER_ATTRIBUTE, ORGANIZATION_USER_ATTRIBUTE, null, false),
+                    .put(ClaimMapping.build(FEDERATED_ORG_CLAIM, FEDERATED_ORG_CLAIM, null, false),
                             context.getAuthenticatorProperties().get(ORGANIZATION_ATTRIBUTE));
         }
     }
@@ -186,7 +186,6 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                 .containsKey(ORG_ID_PARAMETER)) {
             throw handleAuthFailures(ERROR_CODE_ORG_PARAMETERS_NOT_RESOLVED);
         }
-        String organizationName = context.getProperty(ORG_PARAMETER).toString();
 
         // Get the shared service provider based on the requested organization.
         String appResideOrgId = getOrgIdByTenantDomain(appResideTenantDomain);
@@ -215,7 +214,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
             authenticatorProperties.put(CLIENT_ID, clientId);
             authenticatorProperties.put(CLIENT_SECRET, oauthApp.getOauthConsumerSecret());
-            authenticatorProperties.put(ORGANIZATION_ATTRIBUTE, organizationName);
+            authenticatorProperties.put(ORGANIZATION_ATTRIBUTE, sharedOrgId);
             authenticatorProperties.put(OAUTH2_AUTHZ_URL, getAuthorizationEndpoint(sharedOrgId));
             authenticatorProperties.put(OAUTH2_TOKEN_URL, getTokenEndpoint(sharedOrgId));
             authenticatorProperties.put(CALLBACK_URL, oauthApp.getCallbackUrl());
