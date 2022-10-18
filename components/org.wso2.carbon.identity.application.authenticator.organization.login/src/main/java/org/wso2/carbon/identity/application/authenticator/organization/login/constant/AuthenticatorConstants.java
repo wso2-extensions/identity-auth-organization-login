@@ -34,7 +34,7 @@ public class AuthenticatorConstants {
     public static final String ORGANIZATION_PLACEHOLDER = "{organization}";
 
     public static final String ORGANIZATION_ATTRIBUTE = "Organization";
-    public static final String ORGANIZATION_USER_ATTRIBUTE = "org";
+    public static final String FEDERATED_ORG_CLAIM = "federated_org";
     public static final String ORG_PARAMETER = "org";
     public static final String IDP_PARAMETER = "idp";
     public static final String AUTHENTICATOR_PARAMETER = "authenticator";
