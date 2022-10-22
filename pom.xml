@@ -25,7 +25,7 @@
 
     <groupId>org.wso2.carbon.identity.auth.organization.login</groupId>
     <artifactId>identity-auth-organization-login</artifactId>
-    <version>1.1.9-SNAPSHOT</version>
+    <version>1.1.9</version>
     <modelVersion>4.0.0</modelVersion>
     <packaging>pom</packaging>
     <name>WSO2 Carbon - Organization Login Authenticator</name>
@@ -36,7 +36,7 @@
         <url>https://github.com/wso2-extensions/identity-auth-organization-login.git</url>
         <developerConnection>scm:git:https://github.com/wso2-extensions/identity-auth-organization-login.git</developerConnection>
         <connection>scm:git:https://github.com/wso2-extensions/identity-auth-organization-login.git</connection>
-        <tag>HEAD</tag>
+        <tag>v1.1.9</tag>
     </scm>
 
     <modules>
