@@ -77,7 +77,6 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.EQUAL_SIGN;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ERROR_MESSAGE;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.FEDERATED_ORG_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.IDP_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_ATTRIBUTE;
@@ -91,6 +90,7 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL_CONFIG;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_SELECT_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.TOKEN_ENDPOINT_ORGANIZATION_PATH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USER_ORGANIZATION_CLAIM;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.OAuth2.CALLBACK_URL;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_REQUEST_ORGANIZATION_REDIRECT;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_ORGANIZATION_DOMAIN_FROM_TENANT_DOMAIN;
@@ -153,7 +153,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
             // Add organization name to the user attributes.
             context.getSubject().getUserAttributes()
-                    .put(ClaimMapping.build(FEDERATED_ORG_CLAIM, FEDERATED_ORG_CLAIM, null, false),
+                    .put(ClaimMapping.build(USER_ORGANIZATION_CLAIM, USER_ORGANIZATION_CLAIM, null, false),
                             context.getAuthenticatorProperties().get(ORGANIZATION_ATTRIBUTE));
         }
     }
