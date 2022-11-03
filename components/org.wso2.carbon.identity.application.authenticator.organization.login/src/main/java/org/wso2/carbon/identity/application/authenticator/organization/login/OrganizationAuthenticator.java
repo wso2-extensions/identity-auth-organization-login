@@ -363,6 +363,16 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         }
     }
 
+    /**
+     * When organizations with same name exists, this method construct the redirect url to select the correct
+     * organization out of the similar name organizations by passing the organization name and description.
+     *
+     * @param response      servlet response.
+     * @param context       authentication context.
+     * @param organizations The list of organizations with similar name.
+     * @throws AuthenticationFailedException on errors when setting the redirect URL to select the relevant
+     *                                       organization.
+     */
     @SuppressFBWarnings(value = "UNVALIDATED_REDIRECT", justification = "Redirect params are not based on user inputs.")
     private void redirectToSelectOrganization(HttpServletResponse response, AuthenticationContext context,
                                               List<Organization> organizations) throws AuthenticationFailedException {
