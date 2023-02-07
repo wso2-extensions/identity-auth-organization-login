@@ -29,8 +29,8 @@ public class AuthenticatorConstants {
     public static final String AUTHENTICATOR_NAME = "OrganizationAuthenticator";
     public static final String AUTHENTICATOR_FRIENDLY_NAME = "OrganizationLogin";
 
-    public static final String AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH = "oauth2/authorize";
-    public static final String TOKEN_ENDPOINT_ORGANIZATION_PATH = "oauth2/token";
+    public static final String AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH = "o/{organization}/oauth2/authorize";
+    public static final String TOKEN_ENDPOINT_ORGANIZATION_PATH = "o/{organization}/oauth2/token";
     public static final String ORGANIZATION_PLACEHOLDER = "{organization}";
 
     public static final String ORGANIZATION_ATTRIBUTE = "Organization";
