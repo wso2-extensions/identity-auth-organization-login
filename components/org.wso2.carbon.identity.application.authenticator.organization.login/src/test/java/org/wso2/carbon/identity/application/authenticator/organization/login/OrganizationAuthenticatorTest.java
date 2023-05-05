@@ -295,6 +295,7 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getAuthenticatorProperties()).thenReturn(authenticatorProperties);
         when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
         when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        when(mockAuthenticationContext.getQueryParams()).thenReturn("scope=openid profile email groups");
 
         mockCarbonContext();
         AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
