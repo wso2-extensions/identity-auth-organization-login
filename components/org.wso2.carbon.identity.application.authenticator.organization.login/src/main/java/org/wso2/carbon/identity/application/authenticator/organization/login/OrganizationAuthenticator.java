@@ -167,10 +167,9 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     protected String getScope(String scope, Map<String, String> authenticatorProperties) {
 
         if (StringUtils.isBlank(scope)) {
-            scope = "openid email profile phone address app_roles";
-        } else {
-            scope = addAppRolesScope(scope);
+            scope = "openid email profile phone address";
         }
+        scope = addAppRolesScope(scope);
         return scope;
     }
 
