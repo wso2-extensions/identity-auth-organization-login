@@ -49,6 +49,7 @@ public class AuthenticatorConstants {
     public static final String REQUEST_ORG_SELECT_PAGE_URL = "authenticationendpoint/select_org.do";
     public static final String REQUEST_ORG_PAGE_URL_CONFIG = "RequestOrganizationPage";
     public static final String INBOUND_AUTH_TYPE_OAUTH = "oauth2";
+    public static final String APP_ROLES_SCOPE = "app_roles";
 
     public static final String EQUAL_SIGN = "=";
     public static final String AMPERSAND_SIGN = "&";

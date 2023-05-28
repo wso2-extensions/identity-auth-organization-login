@@ -75,6 +75,7 @@ import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthen
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.OAUTH2_AUTHZ_URL;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.OAUTH2_TOKEN_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AMPERSAND_SIGN;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.APP_ROLES_SCOPE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_FRIENDLY_NAME;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_NAME;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_PARAMETER;
@@ -168,6 +169,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         if (StringUtils.isBlank(scope)) {
             scope = "openid email profile phone address";
         }
+        scope = addAppRolesScope(scope);
         return scope;
     }
 
@@ -259,8 +261,17 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
         }
 
-        // First priority for organization Id.
-        if (request.getParameterMap().containsKey(ORG_ID_PARAMETER)) {
+        /**
+         * First priority for organization Id.
+         * Check for the organization Id in the request attribute first since the organization Id is set in the
+         * request attribute if a previous session exists.
+         */
+        if (StringUtils.isNotBlank((String) request.getAttribute(ORG_ID_PARAMETER))) {
+            String organizationId = (String) request.getAttribute(ORG_ID_PARAMETER);
+            context.setProperty(ORG_ID_PARAMETER, organizationId);
+            String organizationName = getOrganizationNameById(organizationId);
+            context.setProperty(ORG_PARAMETER, organizationName);
+        } else if (request.getParameterMap().containsKey(ORG_ID_PARAMETER)) {
             String organizationId = request.getParameter(ORG_ID_PARAMETER);
             context.setProperty(ORG_ID_PARAMETER, organizationId);
             String organizationName = getOrganizationNameById(organizationId);
@@ -572,5 +583,16 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private OrganizationManager getOrganizationManager() {
 
         return AuthenticatorDataHolder.getInstance().getOrganizationManager();
+    }
+
+    /**
+     * Add app_roles scope to the scopes.
+     *
+     * @param scopes space separated scopes
+     * @return scopes with app_roles scope
+     */
+    private String addAppRolesScope(String scopes) {
+
+        return scopes + " " + APP_ROLES_SCOPE;
     }
 }
