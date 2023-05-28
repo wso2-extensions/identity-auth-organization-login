@@ -168,8 +168,9 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
         if (StringUtils.isBlank(scope)) {
             scope = "openid email profile phone address app_roles";
+        } else {
+            scope = addAppRolesScope(scope);
         }
-        scope = addAppRolesScope(scope);
         return scope;
     }
 
@@ -261,7 +262,11 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
         }
 
-        // First priority for organization Id.
+        /**
+         * First priority for organization Id.
+         * Check for the organization Id in the request attribute first since the organization Id is set in the
+         * request attribute if a previous session exists.
+         */
         if (StringUtils.isNotBlank((String) request.getAttribute(ORG_ID_PARAMETER))) {
             String organizationId = (String) request.getAttribute(ORG_ID_PARAMETER);
             context.setProperty(ORG_ID_PARAMETER, organizationId);
