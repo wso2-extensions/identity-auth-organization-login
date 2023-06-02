@@ -396,7 +396,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             for (String param : params) {
                 String[] keyValue = param.split(EQUAL_SIGN);
                 if (keyValue.length >= 2 && OAuthConstants.OAuth20Params.SCOPE.equals(keyValue[0])) {
-                    return URLDecoder.decode(param, FrameworkUtils.UTF_8);
+                    return URLDecoder.decode(param + "+" + APP_ROLES_SCOPE, FrameworkUtils.UTF_8);
                 }
             }
         }
