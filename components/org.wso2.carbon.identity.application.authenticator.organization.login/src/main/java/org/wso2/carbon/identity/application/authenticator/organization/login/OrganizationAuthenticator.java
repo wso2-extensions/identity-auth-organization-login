@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.organization.login;
 
+import com.nimbusds.jose.util.JSONObjectUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -29,9 +30,11 @@ import org.wso2.carbon.identity.application.authentication.framework.Authenticat
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.oidc.OpenIDConnectAuthenticator;
+import org.wso2.carbon.identity.application.authenticator.oidc.model.OIDCStateInfo;
 import org.wso2.carbon.identity.application.authenticator.organization.login.internal.AuthenticatorDataHolder;
 import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
@@ -58,11 +61,16 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
@@ -72,6 +80,7 @@ import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.SESSION_DATA_KEY;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_ID;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_SECRET;
+import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.IdPConfParams.OIDC_LOGOUT_URL;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.OAUTH2_AUTHZ_URL;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.OAUTH2_TOKEN_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AMPERSAND_SIGN;
@@ -83,9 +92,12 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.EQUAL_SIGN;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ERROR_MESSAGE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.IDP_PARAMETER;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ID_TOKEN_ORG_ID_PARAM;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_ATTRIBUTE;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_ID_PLACEHOLDER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_LOGIN_FAILURE;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_QUALIFIED_PLACEHOLDER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_COUNT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DESCRIPTION_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
@@ -257,8 +269,22 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             LogoutFailedException {
 
         if (context.isLogoutRequest()) {
-            super.processLogoutResponse(request, response, context);
-            return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
+            String logoutUrl = getLogoutUrl(context.getAuthenticatorProperties());
+            if (StringUtils.isNotBlank(logoutUrl)) {
+                String idTokenHint = getIdTokenHint(context);
+                String orgId;
+                if (StringUtils.isNotBlank(idTokenHint)) {
+                    orgId = getIdTokenClaim(idTokenHint, ID_TOKEN_ORG_ID_PARAM);
+                } else {
+                    orgId = getUserOrgIdFromContext(context);
+                }
+                if (StringUtils.contains(logoutUrl, ORGANIZATION_QUALIFIED_PLACEHOLDER) &&
+                        StringUtils.isNotBlank(orgId)) {
+                    logoutUrl = StringUtils.replace(logoutUrl, ORGANIZATION_ID_PLACEHOLDER, orgId);
+                    context.getAuthenticatorProperties().replace(OIDC_LOGOUT_URL, logoutUrl);
+                }
+            }
+            return super.process(request, response, context);
         }
 
         /**
@@ -289,6 +315,48 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             return AuthenticatorFlowStatus.INCOMPLETE;
         }
         return super.process(request, response, context);
+    }
+
+    private String getIdTokenHint(AuthenticationContext context) {
+
+        if (context.getStateInfo() instanceof OIDCStateInfo) {
+            return ((OIDCStateInfo) context.getStateInfo()).getIdTokenHint();
+        }
+        return null;
+    }
+
+    private String getIdTokenClaim(String idToken, String claimName) {
+
+        String base64Body = idToken.split("\\.")[1];
+        byte[] decoded = Base64.getDecoder().decode(base64Body);
+        Set<Map.Entry<String, Object>> jwtAttributeSet = new HashSet<>();
+        try {
+            jwtAttributeSet = JSONObjectUtils.parse(new String(decoded, StandardCharsets.UTF_8)).entrySet();
+        } catch (ParseException e) {
+            log.error("Error occurred while parsing JWT : ", e);
+        }
+        for (Map.Entry<String, Object> entry : jwtAttributeSet) {
+            if (StringUtils.equals(claimName, entry.getKey())) {
+                return String.valueOf(entry.getValue());
+            }
+        }
+        return StringUtils.EMPTY;
+    }
+
+    private String getUserOrgIdFromContext(AuthenticationContext context) {
+
+        AuthenticatedUser authenticatedUser = (AuthenticatedUser)
+                context.getParameter(FrameworkConstants.AUTHENTICATED_USER);
+        if (authenticatedUser != null) {
+            Map<ClaimMapping, String> attributesMap = authenticatedUser.getUserAttributes();
+            for (Map.Entry<ClaimMapping, String> entry : attributesMap.entrySet()) {
+                ClaimMapping claimMapping = entry.getKey();
+                if (FrameworkConstants.USER_ORGANIZATION_CLAIM.equals(claimMapping.getLocalClaim().getClaimUri())) {
+                    return entry.getValue();
+                }
+            }
+        }
+        return StringUtils.EMPTY;
     }
 
     private String getOrganizationNameById(String organizationId) throws AuthenticationFailedException {

@@ -93,6 +93,14 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.wso2.orbit.com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.minidev</groupId>
+            <artifactId>json-smart</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.testng</groupId>
@@ -161,6 +169,7 @@
                             org.wso2.carbon.identity.oauth; version="${identity.inbound.auth.oauth.import.version.range}",
                             org.wso2.carbon.identity.oauth.dto; version="${identity.inbound.auth.oauth.import.version.range}",
                             org.wso2.carbon.identity.application.authenticator.oidc; version="${identity.outbound.auth.oidc.import.version.range}",
+                            org.wso2.carbon.identity.application.authenticator.oidc.model; version="${identity.outbound.auth.oidc.import.version.range}",
                             org.wso2.carbon.identity.organization.management.application; version="${org.wso2.identity.organization.mgt.imp.pkg.version.range}",
                             org.wso2.carbon.identity.organization.management.service; version="${org.wso2.identity.organization.mgt.core.imp.pkg.version.range}",
                             org.wso2.carbon.identity.organization.management.service.constant; version="${org.wso2.identity.organization.mgt.core.imp.pkg.version.range}",
@@ -170,6 +179,8 @@
                             org.wso2.carbon.user.api;version="${carbon.user.api.imp.pkg.version.range}",
                             org.wso2.carbon.user.core.service;version="${carbon.kernel.package.import.version.range}",
                             org.wso2.carbon.user.core.tenant;version="${carbon.kernel.package.import.version.range}",
+                            com.nimbusds.jose.*; version="${nimbusds.osgi.version.range}",
+                            net.minidev.json; version="${net.minidev.json.imp.pkg.version.range}",
                         </Import-Package>
                     </instructions>
                 </configuration>
