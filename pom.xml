@@ -106,6 +106,16 @@
                 <artifactId>org.wso2.carbon.extension.identity.helper</artifactId>
                 <version>${identity.extension.utils.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.wso2.orbit.com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbusds.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>${json-smart.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>com.google.code.findbugs</groupId>
@@ -334,7 +344,7 @@
         <carbon.multitenancy.package.import.version.range>[4.7.0,5.0.0)
         </carbon.multitenancy.package.import.version.range>
 
-        <carbon.identity.framework.version>5.25.70</carbon.identity.framework.version>
+        <carbon.identity.framework.version>5.25.206</carbon.identity.framework.version>
         <carbon.identity.package.import.version.range>[5.20.0, 7.0.0)
         </carbon.identity.package.import.version.range>
 
@@ -379,5 +389,9 @@
         <compiler-source.version>1.8</compiler-source.version>
         <compiler-target.version>1.8</compiler-target.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <nimbusds.version>7.3.0.wso2v1</nimbusds.version>
+        <nimbusds.osgi.version.range>[7.3.0,8.0.0)</nimbusds.osgi.version.range>
+        <json-smart.version>2.4.9</json-smart.version>
+        <net.minidev.json.imp.pkg.version.range>[2.3.0, 3.0.0)</net.minidev.json.imp.pkg.version.range>
     </properties>
 </project>
