@@ -95,9 +95,7 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ID_TOKEN_ORG_ID_PARAM;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_ATTRIBUTE;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_ID_PLACEHOLDER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_LOGIN_FAILURE;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_QUALIFIED_PLACEHOLDER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_COUNT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DESCRIPTION_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
@@ -269,19 +267,24 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             LogoutFailedException {
 
         if (context.isLogoutRequest()) {
-            String logoutUrl = getLogoutUrl(context.getAuthenticatorProperties());
-            if (StringUtils.isNotBlank(logoutUrl)) {
-                String idTokenHint = getIdTokenHint(context);
-                String orgId;
-                if (StringUtils.isNotBlank(idTokenHint)) {
-                    orgId = getIdTokenClaim(idTokenHint, ID_TOKEN_ORG_ID_PARAM);
-                } else {
-                    orgId = getUserOrgIdFromContext(context);
-                }
-                if (StringUtils.contains(logoutUrl, ORGANIZATION_QUALIFIED_PLACEHOLDER) &&
-                        StringUtils.isNotBlank(orgId)) {
-                    logoutUrl = StringUtils.replace(logoutUrl, ORGANIZATION_ID_PLACEHOLDER, orgId);
-                    context.getAuthenticatorProperties().replace(OIDC_LOGOUT_URL, logoutUrl);
+            String idTokenHint = getIdTokenHint(context);
+            String orgId;
+            if (StringUtils.isNotBlank(idTokenHint)) {
+                orgId = getIdTokenClaim(idTokenHint, ID_TOKEN_ORG_ID_PARAM);
+            } else {
+                orgId = getUserOrgIdFromContext(context);
+            }
+            if (StringUtils.isNotBlank(orgId)) {
+                try {
+                    String logoutUrl = ServiceURLBuilder.create()
+                            .addPath("/oidc/logout")
+                            .setTenant(getTenantDomainByOrgId(orgId))
+                            .setOrganization(orgId)
+                            .build()
+                            .getAbsolutePublicURL();
+                    context.getAuthenticatorProperties().put(OIDC_LOGOUT_URL, logoutUrl);
+                } catch (URLBuilderException e) {
+                    throw new AuthenticationFailedException(e.getMessage());
                 }
             }
             return super.process(request, response, context);

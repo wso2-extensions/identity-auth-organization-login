@@ -53,7 +53,5 @@ public class AuthenticatorConstants {
 
     public static final String EQUAL_SIGN = "=";
     public static final String AMPERSAND_SIGN = "&";
-    public static final String ORGANIZATION_QUALIFIED_PLACEHOLDER = "/o/{organization_id}";
-    public static final String ORGANIZATION_ID_PLACEHOLDER = "{organization_id}";
     public static final String ID_TOKEN_ORG_ID_PARAM = "org_id";
 }
