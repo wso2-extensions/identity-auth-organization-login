@@ -54,8 +54,10 @@ import org.wso2.carbon.identity.organization.management.service.OrganizationMana
 import org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementClientException;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
+import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementServerException;
 import org.wso2.carbon.identity.organization.management.service.model.BasicOrganization;
 import org.wso2.carbon.identity.organization.management.service.model.Organization;
+import org.wso2.carbon.identity.organization.management.service.util.Utils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -225,6 +227,10 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                     getAuthenticationConfig(sharedApplication).orElseThrow(
                             () -> handleAuthFailures(ERROR_CODE_INVALID_APPLICATION));
 
+            boolean isSubOrg = false;
+            if (Utils.isSubOrganization(getOrganizationManager().getOrganizationDepthInHierarchy(sharedOrgId))) {
+                isSubOrg = true;
+            }
             // Update the authenticator configurations based on the user's organization.
             String clientId = oidcConfigurations.getInboundAuthKey();
             OAuthConsumerAppDTO oauthApp = getOAuthAdminService().getOAuthApplicationData(clientId);
@@ -232,11 +238,14 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             authenticatorProperties.put(CLIENT_ID, clientId);
             authenticatorProperties.put(CLIENT_SECRET, oauthApp.getOauthConsumerSecret());
             authenticatorProperties.put(ORGANIZATION_ATTRIBUTE, sharedOrgId);
-            authenticatorProperties.put(OAUTH2_AUTHZ_URL, getAuthorizationEndpoint(sharedOrgId, sharedOrgTenantDomain));
-            authenticatorProperties.put(OAUTH2_TOKEN_URL, getTokenEndpoint(sharedOrgId, sharedOrgTenantDomain));
+            authenticatorProperties.put(OAUTH2_AUTHZ_URL,
+                    getAuthorizationEndpoint(sharedOrgId, sharedOrgTenantDomain, isSubOrg));
+            authenticatorProperties.put(OAUTH2_TOKEN_URL,
+                    getTokenEndpoint(sharedOrgId, sharedOrgTenantDomain, isSubOrg));
             authenticatorProperties.put(CALLBACK_URL, oauthApp.getCallbackUrl());
             authenticatorProperties.put(FrameworkConstants.QUERY_PARAMS, getRequestedScopes(context));
-        } catch (IdentityOAuthAdminException | URLBuilderException | UnsupportedEncodingException e) {
+        } catch (IdentityOAuthAdminException | URLBuilderException | UnsupportedEncodingException |
+                 OrganizationManagementServerException e) {
             throw handleAuthFailures(ERROR_CODE_ERROR_RESOLVING_ORGANIZATION_LOGIN, e);
         }
     }
@@ -276,14 +285,14 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             }
             if (StringUtils.isNotBlank(orgId)) {
                 try {
-                    String logoutUrl = ServiceURLBuilder.create()
-                            .addPath("/oidc/logout")
-                            .setTenant(getTenantDomainByOrgId(orgId))
-                            .setOrganization(orgId)
-                            .build()
-                            .getAbsolutePublicURL();
-                    context.getAuthenticatorProperties().put(OIDC_LOGOUT_URL, logoutUrl);
-                } catch (URLBuilderException e) {
+                    ServiceURLBuilder logoutUrlBuilder = ServiceURLBuilder.create().addPath("/oidc/logout")
+                            .setTenant(getTenantDomainByOrgId(orgId));
+                    if (Utils.isSubOrganization(getOrganizationManager().getOrganizationDepthInHierarchy(orgId))) {
+                        logoutUrlBuilder.setOrganization(orgId);
+                    }
+                    context.getAuthenticatorProperties()
+                            .put(OIDC_LOGOUT_URL, logoutUrlBuilder.build().getAbsolutePublicURL());
+                } catch (URLBuilderException | OrganizationManagementServerException e) {
                     throw new AuthenticationFailedException(e.getMessage());
                 }
             }
@@ -555,27 +564,39 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     /**
      * Returns the authorization endpoint url for a given organization.
      *
-     * @param organizationId Id of the organization.
-     * @param tenantDomain Tenant domain of the organization.
+     * @param organizationId ID of the organization.
+     * @param tenantDomain   Tenant domain of the organization.
+     * @param isSubOrg       Is service URL build for sub-organization.
      * @return The authorization endpoint URL.
      */
-    private String getAuthorizationEndpoint(String organizationId, String tenantDomain) throws URLBuilderException {
+    private String getAuthorizationEndpoint(String organizationId, String tenantDomain, boolean isSubOrg)
+            throws URLBuilderException {
 
-        return ServiceURLBuilder.create().addPath(AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH).setTenant(tenantDomain)
-                .setOrganization(organizationId).build().getAbsolutePublicURL();
+        ServiceURLBuilder serviceURLBuilder = ServiceURLBuilder.create()
+                .addPath(AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH).setTenant(tenantDomain);
+        if (isSubOrg) {
+            serviceURLBuilder.setOrganization(organizationId);
+        }
+        return serviceURLBuilder.build().getAbsolutePublicURL();
     }
 
     /**
      * Returns the token endpoint url for a given organization.
      *
-     * @param organizationId Id of the organization.
-     * @param tenantDomain Tenant domain of the organization.
+     * @param organizationId ID of the organization.
+     * @param tenantDomain   Tenant domain of the organization.
+     * @param isSubOrg       Is service URL build for sub-organization.
      * @return The token endpoint URL.
      */
-    private String getTokenEndpoint(String organizationId, String tenantDomain) throws URLBuilderException {
+    private String getTokenEndpoint(String organizationId, String tenantDomain, boolean isSubOrg)
+            throws URLBuilderException {
 
-        return ServiceURLBuilder.create().addPath(TOKEN_ENDPOINT_ORGANIZATION_PATH).setTenant(tenantDomain)
-                .setOrganization(organizationId).build().getAbsolutePublicURL();
+        ServiceURLBuilder serviceURLBuilder = ServiceURLBuilder.create().addPath(TOKEN_ENDPOINT_ORGANIZATION_PATH)
+                .setTenant(tenantDomain);
+        if (isSubOrg) {
+            serviceURLBuilder.setOrganization(organizationId);
+        }
+        return serviceURLBuilder.build().getAbsolutePublicURL();
     }
 
     /**

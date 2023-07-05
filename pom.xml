@@ -305,7 +305,7 @@
         <org.wso2.identity.organization.mgt.imp.pkg.version.range>[1.0.0,2.0.0)
         </org.wso2.identity.organization.mgt.imp.pkg.version.range>
 
-        <carbon.identity.org.mgt.core.version>1.0.19</carbon.identity.org.mgt.core.version>
+        <carbon.identity.org.mgt.core.version>1.0.53</carbon.identity.org.mgt.core.version>
         <org.wso2.identity.organization.mgt.core.imp.pkg.version.range>[1.0.0,2.0.0)
         </org.wso2.identity.organization.mgt.core.imp.pkg.version.range>
 
