@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>org.wso2.carbon.identity.auth.organization.login.server.feature</artifactId>
     <packaging>pom</packaging>
-    <name>Organization Login authenticator Server Feature</name>
+    <name>Organization Login Authenticator Server Feature</name>
     <url>http://wso2.org</url>
     <description>This feature contains the core bundles required for Organization login authenticator</description>
 
