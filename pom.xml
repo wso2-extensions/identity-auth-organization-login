@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2022, WSO2 LLC. (http://www.wso2.com).
+  ~ Copyright (c) 2022-2023, WSO2 LLC. (http://www.wso2.com).
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@
 
     <modules>
         <module>components/org.wso2.carbon.identity.application.authenticator.organization.login</module>
+        <module>features/org.wso2.carbon.identity.auth.organization.login.server.feature</module>
     </modules>
 
     <dependencyManagement>
@@ -105,6 +106,12 @@
                 <groupId>org.wso2.carbon.extension.identity.authenticator.utils</groupId>
                 <artifactId>org.wso2.carbon.extension.identity.helper</artifactId>
                 <version>${identity.extension.utils.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.auth.organization.login</groupId>
+                <artifactId>org.wso2.carbon.identity.application.authenticator.organization.login</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.wso2.orbit.com.nimbusds</groupId>
