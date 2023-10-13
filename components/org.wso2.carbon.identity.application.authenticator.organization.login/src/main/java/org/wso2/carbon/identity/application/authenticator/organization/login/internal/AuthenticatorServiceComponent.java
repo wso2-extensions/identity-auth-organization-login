@@ -30,6 +30,7 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authenticator.organization.login.OrganizationAuthenticator;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
@@ -168,5 +169,25 @@ public class AuthenticatorServiceComponent {
             log.debug("Organization Application Manager is unset in the Authenticator");
         }
         AuthenticatorDataHolder.getInstance().setOrgApplicationManager(null);
+    }
+
+    @Reference(
+            name = "claim.metadata.management.service",
+            service = ClaimMetadataManagementService.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetClaimMetaDataManagementService"
+    )
+    protected void setClaimMetaDataManagementService(ClaimMetadataManagementService claimMetadataManagementService) {
+
+        AuthenticatorDataHolder.getInstance().setClaimMetadataManagementService(claimMetadataManagementService);
+        log.debug("Setting the claim metadata management service.");
+
+    }
+
+    protected void unsetClaimMetaDataManagementService(ClaimMetadataManagementService claimMetadataManagementService) {
+
+        AuthenticatorDataHolder.getInstance().setClaimMetadataManagementService(null);
+        log.debug("Unset the claim metadata management service.");
     }
 }

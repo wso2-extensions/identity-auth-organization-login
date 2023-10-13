@@ -18,6 +18,7 @@
 package org.wso2.carbon.identity.application.authenticator.organization.login.internal;
 
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
@@ -39,6 +40,7 @@ public class AuthenticatorDataHolder {
     private OrgApplicationManager orgApplicationManager;
 
     private ApplicationManagementService applicationManagementService;
+    private ClaimMetadataManagementService claimMetadataManagementService;
 
     public static AuthenticatorDataHolder getInstance() {
 
@@ -93,5 +95,15 @@ public class AuthenticatorDataHolder {
     public void setApplicationManagementService(ApplicationManagementService applicationManagementService) {
 
         this.applicationManagementService = applicationManagementService;
+    }
+
+    public ClaimMetadataManagementService getClaimMetadataManagementService() {
+
+        return claimMetadataManagementService;
+    }
+
+    public void setClaimMetadataManagementService(ClaimMetadataManagementService claimMetadataManagementService) {
+
+        this.claimMetadataManagementService = claimMetadataManagementService;
     }
 }

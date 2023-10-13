@@ -30,6 +30,9 @@ public class AuthenticatorConstants {
     public static final String AUTHENTICATOR_FRIENDLY_NAME = "OrganizationLogin";
 
     public static final String AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH = "oauth2/authorize";
+    public static final String USERINFO_ENDPOINT_ORGANIZATION_PATH = "oauth2/userinfo";
+    public static final String USERINFO_URL = "UserInfoUrl";
+
     public static final String TOKEN_ENDPOINT_ORGANIZATION_PATH = "oauth2/token";
     public static final String ORGANIZATION_PLACEHOLDER = "{organization}";
 
@@ -54,4 +57,5 @@ public class AuthenticatorConstants {
     public static final String EQUAL_SIGN = "=";
     public static final String AMPERSAND_SIGN = "&";
     public static final String ID_TOKEN_ORG_ID_PARAM = "org_id";
+    public static final String OIDC_CLAIM_DIALECT_URL = "http://wso2.org/oidc/claim";
 }

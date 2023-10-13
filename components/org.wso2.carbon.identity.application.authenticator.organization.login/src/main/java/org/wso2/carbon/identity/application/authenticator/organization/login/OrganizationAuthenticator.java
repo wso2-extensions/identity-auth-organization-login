@@ -43,6 +43,9 @@ import org.wso2.carbon.identity.application.common.model.InboundAuthenticationRe
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
+import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
+import org.wso2.carbon.identity.claim.metadata.mgt.model.Claim;
 import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.oauth.IdentityOAuthAdminException;
@@ -94,6 +97,7 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.IDP_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ID_TOKEN_ORG_ID_PARAM;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.OIDC_CLAIM_DIALECT_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_ATTRIBUTE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_LOGIN_FAILURE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_COUNT_PARAMETER;
@@ -104,6 +108,8 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL_CONFIG;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_SELECT_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.TOKEN_ENDPOINT_ORGANIZATION_PATH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USERINFO_ENDPOINT_ORGANIZATION_PATH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USERINFO_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USER_ORGANIZATION_CLAIM;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.OAuth2.CALLBACK_URL;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_REQUEST_ORGANIZATION_REDIRECT;
@@ -233,10 +239,13 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             authenticatorProperties.put(CLIENT_SECRET, oauthApp.getOauthConsumerSecret());
             authenticatorProperties.put(ORGANIZATION_ATTRIBUTE, sharedOrgId);
             authenticatorProperties.put(OAUTH2_AUTHZ_URL, getAuthorizationEndpoint(sharedOrgId, sharedOrgTenantDomain));
+            authenticatorProperties.put(USERINFO_URL, getUserInfoEndpoint(sharedOrgId, sharedOrgTenantDomain));
             authenticatorProperties.put(OAUTH2_TOKEN_URL, getTokenEndpoint(sharedOrgId, sharedOrgTenantDomain));
             authenticatorProperties.put(CALLBACK_URL, oauthApp.getCallbackUrl());
-            authenticatorProperties.put(FrameworkConstants.QUERY_PARAMS, getRequestedScopes(context));
-        } catch (IdentityOAuthAdminException | URLBuilderException | UnsupportedEncodingException e) {
+            authenticatorProperties.put(FrameworkConstants.QUERY_PARAMS, getQueryParams(context,
+                    sharedApplication.getClaimConfig().getClaimMappings(), appResideTenantDomain));
+        } catch (IdentityOAuthAdminException | ClaimMetadataException | URLBuilderException |
+                 UnsupportedEncodingException e) {
             throw handleAuthFailures(ERROR_CODE_ERROR_RESOLVING_ORGANIZATION_LOGIN, e);
         }
     }
@@ -459,6 +468,27 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         }
     }
 
+    /**
+     * Constructs the query parameters string to be included in an authorization request.
+     *
+     * @param context       The authentication context.
+     * @param claimMappings An array of claim mappings for attribute extraction.
+     * @param tenantDomain  Tenant domain.
+     * @return Query parameters string .
+     * @throws UnsupportedEncodingException on errors when encoding.
+     * @throws ClaimMetadataException       on errors when getting claim query param.
+     */
+    private String getQueryParams(AuthenticationContext context, ClaimMapping[] claimMappings, String tenantDomain)
+            throws UnsupportedEncodingException, ClaimMetadataException {
+
+        StringBuilder paramBuilder = new StringBuilder();
+        // Extract the requested scopes from the initial /authorize request pass to the sub organization.
+        paramBuilder.append(getRequestedScopes(context));
+        // Set claims query param based on the application's requested attributes.
+        paramBuilder.append(getRequestedClaims(claimMappings, tenantDomain));
+        return paramBuilder.toString();
+    }
+
     private String getRequestedScopes(AuthenticationContext context) throws UnsupportedEncodingException {
 
         String queryString = context.getQueryParams();
@@ -470,6 +500,30 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                     return URLDecoder.decode(param + "+" + APP_ROLES_SCOPE, FrameworkUtils.UTF_8);
                 }
             }
+        }
+        return StringUtils.EMPTY;
+    }
+
+    private String getRequestedClaims(ClaimMapping[] claimMappings, String tenantDomain) throws ClaimMetadataException {
+
+        if (claimMappings != null) {
+            StringBuilder paramBuilder = new StringBuilder("&claims={\"userinfo\":{");
+            for (ClaimMapping claimMapping : claimMappings) {
+                String oidcClaim = StringUtils.EMPTY;
+                List<Claim> claims = getClaimManager().getMappedExternalClaimsForLocalClaim(
+                        claimMapping.getLocalClaim().getClaimUri(), tenantDomain);
+                if (claims != null) {
+                    for (Claim claim : claims) {
+                        if (OIDC_CLAIM_DIALECT_URL.equals(claim.getClaimDialectURI())) {
+                            oidcClaim = String.format("\"%s\":{\"essential\": true},", claim.getClaimURI());
+                            paramBuilder.append(oidcClaim);
+                        }
+                    }
+                }
+            }
+            paramBuilder.deleteCharAt(paramBuilder.length() - 1);
+            paramBuilder.append("}}");
+            return paramBuilder.toString();
         }
         return StringUtils.EMPTY;
     }
@@ -566,6 +620,19 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     }
 
     /**
+     * Returns the userinfo endpoint url for a given organization.
+     *
+     * @param organizationId Id of the organization.
+     * @param tenantDomain   Tenant domain of the organization.
+     * @return The userinfo endpoint URL.
+     */
+    private String getUserInfoEndpoint(String organizationId, String tenantDomain) throws URLBuilderException {
+
+        return ServiceURLBuilder.create().addPath(USERINFO_ENDPOINT_ORGANIZATION_PATH).setTenant(tenantDomain)
+                .setOrganization(organizationId).build().getAbsolutePublicURL();
+    }
+
+    /**
      * Returns the token endpoint url for a given organization.
      *
      * @param organizationId Id of the organization.
@@ -654,6 +721,11 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private OrganizationManager getOrganizationManager() {
 
         return AuthenticatorDataHolder.getInstance().getOrganizationManager();
+    }
+
+    private ClaimMetadataManagementService getClaimManager() {
+
+        return AuthenticatorDataHolder.getInstance().getClaimMetadataManagementService();
     }
 
     /**
