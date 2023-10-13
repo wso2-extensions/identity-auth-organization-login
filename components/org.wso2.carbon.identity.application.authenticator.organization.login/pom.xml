@@ -72,6 +72,10 @@
             <artifactId>org.wso2.carbon.identity.organization.management.application</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.claim.metadata.mgt</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.wso2.carbon.extension.identity.authenticator.utils</groupId>
             <artifactId>org.wso2.carbon.extension.identity.helper</artifactId>
             <exclusions>
@@ -159,6 +163,9 @@
                             org.wso2.carbon.identity.application.authentication.framework.inbound; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.application.authentication.framework.model; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.application.authentication.framework.config.model; version="${carbon.identity.package.import.version.range}",
+                            org.wso2.carbon.identity.claim.metadata.mgt; version="${carbon.identity.package.import.version.range}",
+                            org.wso2.carbon.identity.claim.metadata.mgt.exception; version="${carbon.identity.package.import.version.range}",
+                            org.wso2.carbon.identity.claim.metadata.mgt.model; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.base; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.core; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.core.util; version="${carbon.identity.package.import.version.range}",

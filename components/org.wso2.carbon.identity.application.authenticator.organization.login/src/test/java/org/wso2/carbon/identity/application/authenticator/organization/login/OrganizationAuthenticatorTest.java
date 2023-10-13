@@ -28,10 +28,13 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authenticator.organization.login.internal.AuthenticatorDataHolder;
+import org.wso2.carbon.identity.application.common.model.ClaimConfig;
 import org.wso2.carbon.identity.application.common.model.InboundAuthenticationConfig;
 import org.wso2.carbon.identity.application.common.model.InboundAuthenticationRequestConfig;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
+import org.wso2.carbon.identity.claim.metadata.mgt.model.Claim;
 import org.wso2.carbon.identity.common.testng.WithAxisConfiguration;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
 import org.wso2.carbon.identity.oauth.dto.OAuthConsumerAppDTO;
@@ -46,8 +49,10 @@ import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.user.core.tenant.TenantManager;
 
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -62,6 +67,7 @@ import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_ID;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_FRIENDLY_NAME;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_NAME;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.OIDC_CLAIM_DIALECT_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_PARAMETER;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_APPLICATION_NOT_SHARED;
@@ -107,6 +113,8 @@ public class OrganizationAuthenticatorTest {
     private BasicOrganization mockBasicOrganization;
     private OrganizationAuthenticator organizationAuthenticator;
     private AuthenticatorDataHolder authenticatorDataHolder;
+    private ClaimMetadataManagementService mockClaimMetadataManagementService;
+    private ClaimConfig mockClaimConfig;
 
     @BeforeMethod
     public void init() throws UserStoreException {
@@ -125,7 +133,8 @@ public class OrganizationAuthenticatorTest {
         mockExternalIdPConfig = mock(ExternalIdPConfig.class);
         mockOrganization = mock(Organization.class);
         mockBasicOrganization = mock(BasicOrganization.class);
-
+        mockClaimMetadataManagementService = mock(ClaimMetadataManagementService.class);
+        mockClaimConfig = mock(ClaimConfig.class);
         organizationAuthenticator = new OrganizationAuthenticator();
         authenticatorParamProperties = new HashMap<>();
         authenticatorProperties = new HashMap<>();
@@ -137,6 +146,7 @@ public class OrganizationAuthenticatorTest {
         authenticatorDataHolder.setOrgApplicationManager(mockOrgApplicationManager);
         authenticatorDataHolder.setOAuthAdminService(mockOAuthAdminServiceImpl);
         authenticatorDataHolder.setApplicationManagementService(mockApplicationManagementService);
+        authenticatorDataHolder.setClaimMetadataManagementService(mockClaimMetadataManagementService);
         Tenant tenant = mock(Tenant.class);
         TenantManager mockTenantManager = mock(TenantManager.class);
         when(mockRealmService.getTenantManager()).thenReturn(mockTenantManager);
@@ -279,6 +289,7 @@ public class OrganizationAuthenticatorTest {
         when(authenticatorDataHolder.getOrgApplicationManager()
                 .resolveSharedApplication(anyString(), anyString(), anyString())).thenReturn(mockServiceProvider);
         when(mockServiceProvider.getInboundAuthenticationConfig()).thenReturn(mockInboundAuthenticationConfig);
+        when(mockServiceProvider.getClaimConfig()).thenReturn(mockClaimConfig);
         when(authenticatorDataHolder.getOrganizationManager().resolveTenantDomain(anyString()))
                 .thenReturn(orgId);
         InboundAuthenticationRequestConfig inbound = new InboundAuthenticationRequestConfig();
@@ -295,6 +306,10 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getAuthenticatorProperties()).thenReturn(authenticatorProperties);
         when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
         when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        List<Claim> claims = new ArrayList<>();
+        claims.add(new Claim(OIDC_CLAIM_DIALECT_URL, "custom", null));
+        when(authenticatorDataHolder.getClaimMetadataManagementService().getMappedExternalClaimsForLocalClaim(
+                anyString(), anyString())).thenReturn(claims);
         when(mockAuthenticationContext.getQueryParams()).thenReturn("scope=openid profile email groups");
 
         mockCarbonContext();
