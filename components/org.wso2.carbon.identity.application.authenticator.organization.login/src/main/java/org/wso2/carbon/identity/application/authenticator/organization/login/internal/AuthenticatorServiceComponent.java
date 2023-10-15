@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2023, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -32,6 +32,8 @@ import org.wso2.carbon.identity.application.authenticator.organization.login.Org
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
+import org.wso2.carbon.identity.organization.config.service.OrganizationConfigManager;
+import org.wso2.carbon.identity.organization.discovery.service.OrganizationDiscoveryManager;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.user.core.service.RealmService;
@@ -189,5 +191,35 @@ public class AuthenticatorServiceComponent {
 
         AuthenticatorDataHolder.getInstance().setClaimMetadataManagementService(null);
         log.debug("Unset the claim metadata management service.");
+    }
+
+    @Reference(name = "identity.organization.config.management.component",
+            service = OrganizationConfigManager.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetOrganizationConfigManager")
+    protected void setOrganizationConfigManager(OrganizationConfigManager organizationConfigManager) {
+
+        AuthenticatorDataHolder.getInstance().setOrganizationConfigManager(organizationConfigManager);
+    }
+
+    protected void unsetOrganizationConfigManager(OrganizationConfigManager organizationConfigManager) {
+
+        AuthenticatorDataHolder.getInstance().setOrganizationConfigManager(null);
+    }
+
+    @Reference(name = "identity.organization.discovery.management.component",
+            service = OrganizationDiscoveryManager.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetOrganizationDiscoveryManager")
+    protected void setOrganizationDiscoveryManager(OrganizationDiscoveryManager organizationDiscoveryManager) {
+
+        AuthenticatorDataHolder.getInstance().setOrganizationDiscoveryManager(organizationDiscoveryManager);
+    }
+
+    protected void unsetOrganizationDiscoveryManager(OrganizationDiscoveryManager organizationDiscoveryManager) {
+
+        AuthenticatorDataHolder.getInstance().setOrganizationDiscoveryManager(null);
     }
 }
