@@ -506,7 +506,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
     private String getRequestedClaims(ClaimMapping[] claimMappings, String tenantDomain) throws ClaimMetadataException {
 
-        if (claimMappings != null) {
+        if (claimMappings != null && claimMappings.length > 0) {
             StringBuilder paramBuilder = new StringBuilder("&claims={\"userinfo\":{");
             for (ClaimMapping claimMapping : claimMappings) {
                 String oidcClaim = StringUtils.EMPTY;
