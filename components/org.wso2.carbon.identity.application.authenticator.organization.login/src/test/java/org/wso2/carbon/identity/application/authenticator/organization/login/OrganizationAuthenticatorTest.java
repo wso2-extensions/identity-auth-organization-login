@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2023, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -38,6 +38,8 @@ import org.wso2.carbon.identity.claim.metadata.mgt.model.Claim;
 import org.wso2.carbon.identity.common.testng.WithAxisConfiguration;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
 import org.wso2.carbon.identity.oauth.dto.OAuthConsumerAppDTO;
+import org.wso2.carbon.identity.organization.config.service.OrganizationConfigManager;
+import org.wso2.carbon.identity.organization.config.service.model.DiscoveryConfig;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementServerException;
@@ -115,6 +117,8 @@ public class OrganizationAuthenticatorTest {
     private AuthenticatorDataHolder authenticatorDataHolder;
     private ClaimMetadataManagementService mockClaimMetadataManagementService;
     private ClaimConfig mockClaimConfig;
+    private OrganizationConfigManager mockOrganizationConfigManager;
+    private DiscoveryConfig mockDiscoveryConfig;
 
     @BeforeMethod
     public void init() throws UserStoreException {
@@ -135,6 +139,8 @@ public class OrganizationAuthenticatorTest {
         mockBasicOrganization = mock(BasicOrganization.class);
         mockClaimMetadataManagementService = mock(ClaimMetadataManagementService.class);
         mockClaimConfig = mock(ClaimConfig.class);
+        mockOrganizationConfigManager = mock(OrganizationConfigManager.class);
+        mockDiscoveryConfig = mock(DiscoveryConfig.class);
         organizationAuthenticator = new OrganizationAuthenticator();
         authenticatorParamProperties = new HashMap<>();
         authenticatorProperties = new HashMap<>();
@@ -147,6 +153,7 @@ public class OrganizationAuthenticatorTest {
         authenticatorDataHolder.setOAuthAdminService(mockOAuthAdminServiceImpl);
         authenticatorDataHolder.setApplicationManagementService(mockApplicationManagementService);
         authenticatorDataHolder.setClaimMetadataManagementService(mockClaimMetadataManagementService);
+        authenticatorDataHolder.setOrganizationConfigManager(mockOrganizationConfigManager);
         Tenant tenant = mock(Tenant.class);
         TenantManager mockTenantManager = mock(TenantManager.class);
         when(mockRealmService.getTenantManager()).thenReturn(mockTenantManager);
@@ -198,6 +205,9 @@ public class OrganizationAuthenticatorTest {
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
         mockCarbonContext();
 
+        when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
+                .thenReturn(mockDiscoveryConfig);
+
         AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
                 mockAuthenticationContext);
         Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
@@ -217,6 +227,9 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
         mockCarbonContext();
+
+        when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
+                .thenReturn(mockDiscoveryConfig);
 
         AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
                 mockAuthenticationContext);
@@ -262,6 +275,9 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
         mockCarbonContext();
+
+        when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
+                .thenReturn(mockDiscoveryConfig);
 
         AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
                 mockAuthenticationContext);

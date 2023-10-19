@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2023, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -20,6 +20,8 @@ package org.wso2.carbon.identity.application.authenticator.organization.login.in
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
+import org.wso2.carbon.identity.organization.config.service.OrganizationConfigManager;
+import org.wso2.carbon.identity.organization.discovery.service.OrganizationDiscoveryManager;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.user.core.service.RealmService;
@@ -41,6 +43,8 @@ public class AuthenticatorDataHolder {
 
     private ApplicationManagementService applicationManagementService;
     private ClaimMetadataManagementService claimMetadataManagementService;
+    private OrganizationConfigManager organizationConfigManager;
+    private OrganizationDiscoveryManager organizationDiscoveryManager;
 
     public static AuthenticatorDataHolder getInstance() {
 
@@ -105,5 +109,25 @@ public class AuthenticatorDataHolder {
     public void setClaimMetadataManagementService(ClaimMetadataManagementService claimMetadataManagementService) {
 
         this.claimMetadataManagementService = claimMetadataManagementService;
+    }
+
+    public OrganizationConfigManager getOrganizationConfigManager() {
+
+        return organizationConfigManager;
+    }
+
+    public void setOrganizationConfigManager(OrganizationConfigManager organizationConfigManager) {
+
+        this.organizationConfigManager = organizationConfigManager;
+    }
+
+    public OrganizationDiscoveryManager getOrganizationDiscoveryManager() {
+
+        return organizationDiscoveryManager;
+    }
+
+    public void setOrganizationDiscoveryManager(OrganizationDiscoveryManager organizationDiscoveryManager) {
+
+        this.organizationDiscoveryManager = organizationDiscoveryManager;
     }
 }
