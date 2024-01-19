@@ -375,7 +375,7 @@
         <identity.inbound.auth.oauth.version>6.10.1</identity.inbound.auth.oauth.version>
         <identity.inbound.auth.oauth.import.version.range>[6.10.0, 7.0.0)</identity.inbound.auth.oauth.import.version.range>
         <identity.outbound.auth.oidc.version>5.10.0</identity.outbound.auth.oidc.version>
-        <identity.outbound.auth.oidc.import.version.range>[5.10.0, 5.12.0)</identity.outbound.auth.oidc.import.version.range>
+        <identity.outbound.auth.oidc.import.version.range>[5.10.0, 6.0.0)</identity.outbound.auth.oidc.import.version.range>
 
         <carbon.user.api.imp.pkg.version.range>[1.0.1, 2.0.0)</carbon.user.api.imp.pkg.version.range>
         <carbon.user.core.imp.pkg.version.range>[4.7.0, 4.8.0)</carbon.user.core.imp.pkg.version.range>
