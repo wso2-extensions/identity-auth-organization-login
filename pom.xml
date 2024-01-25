@@ -367,13 +367,13 @@
         </carbon.multitenancy.package.import.version.range>
 
         <carbon.identity.framework.version>5.25.383</carbon.identity.framework.version>
-        <carbon.identity.package.import.version.range>[5.20.0, 7.0.0)
+        <carbon.identity.package.import.version.range>[5.20.0, 8.0.0)
         </carbon.identity.package.import.version.range>
 
         <identity.extension.utils.version>1.0.8</identity.extension.utils.version>
         <identity.extension.utils.import.version.range>[1.0.8, 2.0.0)</identity.extension.utils.import.version.range>
         <identity.inbound.auth.oauth.version>6.10.1</identity.inbound.auth.oauth.version>
-        <identity.inbound.auth.oauth.import.version.range>[6.10.0, 7.0.0)</identity.inbound.auth.oauth.import.version.range>
+        <identity.inbound.auth.oauth.import.version.range>[6.10.0, 8.0.0)</identity.inbound.auth.oauth.import.version.range>
         <identity.outbound.auth.oidc.version>5.10.0</identity.outbound.auth.oidc.version>
         <identity.outbound.auth.oidc.import.version.range>[5.10.0, 6.0.0)</identity.outbound.auth.oidc.import.version.range>
 
