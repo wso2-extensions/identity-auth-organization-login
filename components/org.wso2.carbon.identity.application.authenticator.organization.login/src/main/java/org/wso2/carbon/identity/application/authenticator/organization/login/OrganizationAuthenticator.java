@@ -857,4 +857,15 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
         return scopes + " " + APP_ROLES_SCOPE;
     }
+
+    @Override
+    protected String resolveCallBackURL(Map<String, String> authenticatorProperties, AuthenticationContext context) {
+
+        /*
+         Even though the usual OIDC authenticator's callbackURL should be changed as client application's callbackURL in API_BASED auth flow
+         to stop consuming the authorization code from commonAuth endpoint, OrganizationAuthenticator should not change the callbackURL.
+         Even in the API_BASED auth flow, the callbackURL should be the commonAuth endpoint to consume the authorization code.
+         */
+        return authenticatorProperties.get(CALLBACK_URL);
+    }
 }
