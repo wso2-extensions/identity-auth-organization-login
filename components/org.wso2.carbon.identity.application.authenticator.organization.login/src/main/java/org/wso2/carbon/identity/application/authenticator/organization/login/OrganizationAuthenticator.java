@@ -859,8 +859,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     }
 
     @Override
-    protected String resolveCallBackURLForAPIBasedAuthFlow(Map<String, String> authenticatorProperties,
-                                                           AuthenticationContext context) {
+    protected String resolveCallBackURLForAPIBasedAuthFlow(AuthenticationContext context) {
 
         /*
          Even though the usual OIDC authenticator's callbackURL should be changed as client application's callbackURL
@@ -869,6 +868,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
          Even in the API_BASED auth flow, the callbackURL should be the commonAuth endpoint to consume the
          authorization code.
          */
+        Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
         return authenticatorProperties.get(CALLBACK_URL);
     }
 }
