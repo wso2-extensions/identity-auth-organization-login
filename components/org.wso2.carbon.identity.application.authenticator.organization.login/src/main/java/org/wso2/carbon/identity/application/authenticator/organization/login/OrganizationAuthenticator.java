@@ -46,6 +46,7 @@ import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
 import org.wso2.carbon.identity.claim.metadata.mgt.model.Claim;
+import org.wso2.carbon.identity.client.attestation.mgt.utils.Constants;
 import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.oauth.IdentityOAuthAdminException;
@@ -566,6 +567,11 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         String discoveryInput = (String) context.getProperty(ORG_DISCOVERY_PARAMETER);
         if (StringUtils.isNotBlank(discoveryInput)) {
             paramBuilder.append(AMPERSAND_SIGN).append(LOGIN_HINT_PARAMETER).append(EQUAL_SIGN).append(discoveryInput);
+        }
+
+        if (Boolean.parseBoolean((String) context.getProperty(FrameworkConstants.IS_API_BASED))) {
+            paramBuilder.append(AMPERSAND_SIGN).append(Constants.RESPONSE_MODE).append(EQUAL_SIGN)
+                    .append(Constants.DIRECT);
         }
         return paramBuilder.toString();
     }
