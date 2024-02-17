@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.wso2.carbon.identity.auth.organization.login</groupId>
         <artifactId>identity-auth-organization-login</artifactId>
-        <version>1.1.27-SNAPSHOT</version>
+        <version>1.1.28-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -50,6 +50,10 @@
         <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.application.authentication.framework</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.client.attestation.mgt</artifactId>
         </dependency>
         <dependency>
             <groupId>org.wso2.carbon.identity.inbound.auth.oauth2</groupId>
@@ -131,6 +135,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.wso2.carbon.identity.framework</groupId>
             <artifactId>org.wso2.carbon.identity.testutil</artifactId>
             <scope>test</scope>
@@ -171,6 +180,7 @@
                             org.wso2.carbon.identity.application.authentication.framework.inbound; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.application.authentication.framework.model; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.application.authentication.framework.config.model; version="${carbon.identity.package.import.version.range}",
+                            org.wso2.carbon.identity.client.attestation.mgt.*; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.claim.metadata.mgt; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.claim.metadata.mgt.exception; version="${carbon.identity.package.import.version.range}",
                             org.wso2.carbon.identity.claim.metadata.mgt.model; version="${carbon.identity.package.import.version.range}",
