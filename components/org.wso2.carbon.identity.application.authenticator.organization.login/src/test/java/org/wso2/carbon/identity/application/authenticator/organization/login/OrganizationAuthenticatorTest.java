@@ -18,7 +18,10 @@
 
 package org.wso2.carbon.identity.application.authenticator.organization.login;
 
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.carbon.base.CarbonBaseConstants;
@@ -36,6 +39,7 @@ import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.model.Claim;
 import org.wso2.carbon.identity.common.testng.WithAxisConfiguration;
+import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
 import org.wso2.carbon.identity.oauth.dto.OAuthConsumerAppDTO;
 import org.wso2.carbon.identity.organization.config.service.OrganizationConfigManager;
@@ -119,6 +123,14 @@ public class OrganizationAuthenticatorTest {
     private ClaimConfig mockClaimConfig;
     private OrganizationConfigManager mockOrganizationConfigManager;
     private DiscoveryConfig mockDiscoveryConfig;
+    private MockedStatic<IdentityTenantUtil> mockedUtilities;
+
+    @BeforeClass
+    public void setUp() {
+
+        mockCarbonContext();
+        mockIdentityTenantUtils();
+    }
 
     @BeforeMethod
     public void init() throws UserStoreException {
@@ -174,6 +186,13 @@ public class OrganizationAuthenticatorTest {
         PrivilegedCarbonContext.getThreadLocalCarbonContext().setUsername("admin");
     }
 
+    private void mockIdentityTenantUtils() {
+
+        mockedUtilities = Mockito.mockStatic(IdentityTenantUtil.class, Mockito.withSettings()
+                .defaultAnswer(Mockito.CALLS_REAL_METHODS));
+        mockedUtilities.when(() -> IdentityTenantUtil.getTenantId(anyString())).thenReturn(-1234);
+    }
+
     @Test
     public void testGetFriendlyName() {
 
@@ -203,7 +222,6 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
         when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
-        mockCarbonContext();
 
         when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
                 .thenReturn(mockDiscoveryConfig);
@@ -226,7 +244,6 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
         when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
-        mockCarbonContext();
 
         when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
                 .thenReturn(mockDiscoveryConfig);
@@ -274,7 +291,6 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getServiceProviderName()).thenReturn(saasApp);
         when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
-        mockCarbonContext();
 
         when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
                 .thenReturn(mockDiscoveryConfig);
@@ -328,7 +344,6 @@ public class OrganizationAuthenticatorTest {
                 anyString(), anyString())).thenReturn(claims);
         when(mockAuthenticationContext.getQueryParams()).thenReturn("scope=openid profile email groups");
 
-        mockCarbonContext();
         AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
                 mockAuthenticationContext);
 
