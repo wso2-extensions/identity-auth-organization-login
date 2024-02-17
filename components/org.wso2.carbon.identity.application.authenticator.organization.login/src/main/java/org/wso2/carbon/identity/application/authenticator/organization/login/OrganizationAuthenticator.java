@@ -570,7 +570,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         }
 
         if (Boolean.parseBoolean((String) context.getProperty(FrameworkConstants.IS_API_BASED))) {
-            paramBuilder.append(AMPERSAND_SIGN).append(Constants.RESPONSE_MODE).append(EQUAL_SIGN).append(Constants.DIRECT);
+            paramBuilder.append(AMPERSAND_SIGN).append(Constants.RESPONSE_MODE).append(EQUAL_SIGN)
+                    .append(Constants.DIRECT);
         }
         return paramBuilder.toString();
     }
