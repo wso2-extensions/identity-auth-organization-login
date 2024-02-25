@@ -51,7 +51,6 @@ import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.oauth.IdentityOAuthAdminException;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
-import org.wso2.carbon.identity.oauth.common.OAuthConstants;
 import org.wso2.carbon.identity.oauth.dto.OAuthConsumerAppDTO;
 import org.wso2.carbon.identity.organization.config.service.OrganizationConfigManager;
 import org.wso2.carbon.identity.organization.config.service.exception.OrganizationConfigException;
@@ -69,7 +68,6 @@ import org.wso2.carbon.identity.organization.management.service.model.Organizati
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -86,7 +84,6 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.SESSION_DATA_KEY;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_ID;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_SECRET;
@@ -559,8 +556,6 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             throws UnsupportedEncodingException, ClaimMetadataException {
 
         StringBuilder paramBuilder = new StringBuilder();
-        // Extract the requested scopes from the initial /authorize request pass to the sub organization.
-        paramBuilder.append(getRequestedScopes(context));
         // Set claims query param based on the application's requested attributes.
         paramBuilder.append(getRequestedClaims(claimMappings, tenantDomain));
 
@@ -597,21 +592,6 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             throw handleAuthFailures(ERROR_CODE_ERROR_GETTING_ORGANIZATION_DISCOVERY_CONFIG, e);
         }
         return false;
-    }
-
-    private String getRequestedScopes(AuthenticationContext context) throws UnsupportedEncodingException {
-
-        String queryString = context.getQueryParams();
-        if (isNotBlank(queryString)) {
-            String[] params = queryString.split(AMPERSAND_SIGN);
-            for (String param : params) {
-                String[] keyValue = param.split(EQUAL_SIGN);
-                if (keyValue.length >= 2 && OAuthConstants.OAuth20Params.SCOPE.equals(keyValue[0])) {
-                    return URLDecoder.decode(param + "+" + APP_ROLES_SCOPE, FrameworkUtils.UTF_8);
-                }
-            }
-        }
-        return StringUtils.EMPTY;
     }
 
     private String getRequestedClaims(ClaimMapping[] claimMappings, String tenantDomain) throws ClaimMetadataException {
