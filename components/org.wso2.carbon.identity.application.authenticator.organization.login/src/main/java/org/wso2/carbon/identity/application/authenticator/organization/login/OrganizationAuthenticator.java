@@ -559,8 +559,6 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             throws UnsupportedEncodingException, ClaimMetadataException {
 
         StringBuilder paramBuilder = new StringBuilder();
-        // Extract the requested scopes from the initial /authorize request pass to the sub organization.
-        paramBuilder.append(getRequestedScopes(context));
         // Set claims query param based on the application's requested attributes.
         paramBuilder.append(getRequestedClaims(claimMappings, tenantDomain));
 
@@ -597,21 +595,6 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             throw handleAuthFailures(ERROR_CODE_ERROR_GETTING_ORGANIZATION_DISCOVERY_CONFIG, e);
         }
         return false;
-    }
-
-    private String getRequestedScopes(AuthenticationContext context) throws UnsupportedEncodingException {
-
-        String queryString = context.getQueryParams();
-        if (isNotBlank(queryString)) {
-            String[] params = queryString.split(AMPERSAND_SIGN);
-            for (String param : params) {
-                String[] keyValue = param.split(EQUAL_SIGN);
-                if (keyValue.length >= 2 && OAuthConstants.OAuth20Params.SCOPE.equals(keyValue[0])) {
-                    return URLDecoder.decode(param + "+" + APP_ROLES_SCOPE, FrameworkUtils.UTF_8);
-                }
-            }
-        }
-        return StringUtils.EMPTY;
     }
 
     private String getRequestedClaims(ClaimMapping[] claimMappings, String tenantDomain) throws ClaimMetadataException {
