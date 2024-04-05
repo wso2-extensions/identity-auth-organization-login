@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2024, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -67,4 +67,6 @@ public class AuthenticatorConstants {
     public static final String AMPERSAND_SIGN = "&";
     public static final String ID_TOKEN_ORG_ID_PARAM = "org_id";
     public static final String OIDC_CLAIM_DIALECT_URL = "http://wso2.org/oidc/claim";
+
+    public static final String SAML_RESP = "SAMLResponse";
 }
