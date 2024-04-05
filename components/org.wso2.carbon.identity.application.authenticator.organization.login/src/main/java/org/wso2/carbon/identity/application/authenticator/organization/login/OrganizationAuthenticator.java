@@ -46,6 +46,7 @@ import org.wso2.carbon.identity.application.common.model.InboundAuthenticationRe
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
 import org.wso2.carbon.identity.claim.metadata.mgt.model.Claim;
@@ -68,6 +69,7 @@ import org.wso2.carbon.identity.organization.management.service.exception.Organi
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
 import org.wso2.carbon.identity.organization.management.service.model.BasicOrganization;
 import org.wso2.carbon.identity.organization.management.service.model.Organization;
+import org.wso2.carbon.utils.DiagnosticLog;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -92,6 +94,7 @@ import static org.wso2.carbon.identity.application.authentication.framework.util
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_ID;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_SECRET;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.IdPConfParams.OIDC_LOGOUT_URL;
+import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.LogConstants.ActionIDs.INITIATE_OUTBOUND_AUTH_REQUEST;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.OAUTH2_AUTHZ_URL;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.OAUTH2_TOKEN_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AMPERSAND_SIGN;
@@ -189,9 +192,19 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             if (request.getParameter(AuthenticatorConstants.SAML_RESP) == null) {
                 super.initiateAuthenticationRequest(request, response, context);
             } else {
-                String loginPage = super.prepareLoginPage(request, context);
+                DiagnosticLog.DiagnosticLogBuilder flowCompletionDiagnosticLogBuilder = null;
+                if (LoggerUtils.isDiagnosticLogsEnabled()) {
+                    flowCompletionDiagnosticLogBuilder = new DiagnosticLog.DiagnosticLogBuilder(
+                            getComponentId(), INITIATE_OUTBOUND_AUTH_REQUEST);
+                }
+                String loginPage = super.prepareLoginPage(request, context, flowCompletionDiagnosticLogBuilder);
                 try {
                     generateSamlPostPage(response, loginPage, request.getParameter(AuthenticatorConstants.SAML_RESP));
+                    if (LoggerUtils.isDiagnosticLogsEnabled() && flowCompletionDiagnosticLogBuilder != null) {
+                        flowCompletionDiagnosticLogBuilder
+                                .resultMessage("Redirecting to organization's authorize endpoint.");
+                        LoggerUtils.triggerDiagnosticLogEvent(flowCompletionDiagnosticLogBuilder);
+                    }
                 } catch (IOException e) {
                     throw new AuthenticationFailedException(
                             OIDCErrorConstants.ErrorMessages.IO_ERROR.getCode(), e.getMessage(), e);
