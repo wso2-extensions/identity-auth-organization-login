@@ -150,6 +150,11 @@
                 <version>${findbugs.annotations.version}</version>
                 <scope>provided</scope>
             </dependency>
+            <dependency>
+                <groupId>org.wso2.orbit.org.owasp.encoder</groupId>
+                <artifactId>encoder</artifactId>
+                <version>${encoder.wso2.version}</version>
+            </dependency>
 
             <!--Test Dependencies-->
             <dependency>
@@ -401,6 +406,8 @@
 
         <oltu.oauth2.client.version>1.0.0</oltu.oauth2.client.version>
         <oltu.oauth2.client.version.range>[1.0.0,1.0.3)</oltu.oauth2.client.version.range>
+
+        <encoder.wso2.version>1.2.0.wso2v1</encoder.wso2.version>
 
         <mockito-core.version>4.6.1</mockito-core.version>
         <jacoco.version>0.8.2</jacoco.version>

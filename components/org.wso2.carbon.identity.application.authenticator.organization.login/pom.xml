@@ -117,6 +117,10 @@
             <groupId>net.minidev</groupId>
             <artifactId>json-smart</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.wso2.orbit.org.owasp.encoder</groupId>
+            <artifactId>encoder</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.testng</groupId>
@@ -171,6 +175,8 @@
 
                             org.osgi.framework; version="${osgi.framework.imp.pkg.version.range}",
                             org.osgi.service.component; version="${osgi.service.component.imp.pkg.version.range}",
+
+                            org.owasp.encoder,
 
                             org.wso2.carbon.extension.identity.helper; version="${identity.extension.utils.import.version.range}",
                             org.wso2.carbon.identity.application.authentication.framework; version="${carbon.identity.package.import.version.range}",
