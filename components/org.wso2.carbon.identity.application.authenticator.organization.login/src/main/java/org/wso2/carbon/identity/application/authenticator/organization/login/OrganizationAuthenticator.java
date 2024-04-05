@@ -46,6 +46,7 @@ import org.wso2.carbon.identity.application.common.model.InboundAuthenticationRe
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.central.log.mgt.utils.LogConstants;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
@@ -192,18 +193,27 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             if (request.getParameter(AuthenticatorConstants.SAML_RESP) == null) {
                 super.initiateAuthenticationRequest(request, response, context);
             } else {
-                DiagnosticLog.DiagnosticLogBuilder flowCompletionDiagnosticLogBuilder = null;
-                if (LoggerUtils.isDiagnosticLogsEnabled()) {
-                    flowCompletionDiagnosticLogBuilder = new DiagnosticLog.DiagnosticLogBuilder(
+                DiagnosticLog.DiagnosticLogBuilder diagnosticLogBuilder = null;
+                if (LoggerUtils.isDiagnosticLogsEnabled() && context.getAuthenticatorProperties() != null) {
+                    diagnosticLogBuilder = new DiagnosticLog.DiagnosticLogBuilder(
                             getComponentId(), INITIATE_OUTBOUND_AUTH_REQUEST);
+                    diagnosticLogBuilder.logDetailLevel(DiagnosticLog.LogDetailLevel.APPLICATION)
+                            .resultStatus(DiagnosticLog.ResultStatus.SUCCESS)
+                            .inputParam(LogConstants.InputKeys.STEP, context.getCurrentStep())
+                            .inputParam("authenticator properties", context.getAuthenticatorProperties().keySet())
+                            .inputParam(LogConstants.InputKeys.IDP, context.getExternalIdP().getIdPName())
+                            .inputParams(getApplicationDetails(context));
                 }
-                String loginPage = super.prepareLoginPage(request, context, flowCompletionDiagnosticLogBuilder);
+                String loginPage = super.prepareLoginPage(request, context);
                 try {
                     generateSamlPostPage(response, loginPage, request.getParameter(AuthenticatorConstants.SAML_RESP));
-                    if (LoggerUtils.isDiagnosticLogsEnabled() && flowCompletionDiagnosticLogBuilder != null) {
-                        flowCompletionDiagnosticLogBuilder
-                                .resultMessage("Redirecting to organization's authorize endpoint.");
-                        LoggerUtils.triggerDiagnosticLogEvent(flowCompletionDiagnosticLogBuilder);
+                    if (LoggerUtils.isDiagnosticLogsEnabled() && diagnosticLogBuilder != null) {
+                        String scopes = extractScopesFromURL(loginPage);
+                        if (StringUtils.isNotEmpty(scopes)) {
+                            diagnosticLogBuilder.inputParam("scopes", scopes);
+                        }
+                        diagnosticLogBuilder.resultMessage("Redirecting to organization's authorize endpoint.");
+                        LoggerUtils.triggerDiagnosticLogEvent(diagnosticLogBuilder);
                     }
                 } catch (IOException e) {
                     throw new AuthenticationFailedException(
