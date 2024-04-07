@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2024, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -24,6 +24,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.owasp.encoder.Encode;
 import org.wso2.carbon.base.MultitenantConstants;
 import org.wso2.carbon.extension.identity.helper.IdentityHelperConstants;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
@@ -35,6 +36,8 @@ import org.wso2.carbon.identity.application.authentication.framework.util.Framew
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.oidc.OpenIDConnectAuthenticator;
 import org.wso2.carbon.identity.application.authenticator.oidc.model.OIDCStateInfo;
+import org.wso2.carbon.identity.application.authenticator.oidc.util.OIDCErrorConstants;
+import org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants;
 import org.wso2.carbon.identity.application.authenticator.organization.login.internal.AuthenticatorDataHolder;
 import org.wso2.carbon.identity.application.common.IdentityApplicationManagementException;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
@@ -43,6 +46,8 @@ import org.wso2.carbon.identity.application.common.model.InboundAuthenticationRe
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.central.log.mgt.utils.LogConstants;
+import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
 import org.wso2.carbon.identity.claim.metadata.mgt.model.Claim;
@@ -65,8 +70,10 @@ import org.wso2.carbon.identity.organization.management.service.exception.Organi
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
 import org.wso2.carbon.identity.organization.management.service.model.BasicOrganization;
 import org.wso2.carbon.identity.organization.management.service.model.Organization;
+import org.wso2.carbon.utils.DiagnosticLog;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -88,6 +95,7 @@ import static org.wso2.carbon.identity.application.authentication.framework.util
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_ID;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_SECRET;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.IdPConfParams.OIDC_LOGOUT_URL;
+import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.LogConstants.ActionIDs.INITIATE_OUTBOUND_AUTH_REQUEST;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.OAUTH2_AUTHZ_URL;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.OAUTH2_TOKEN_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AMPERSAND_SIGN;
@@ -148,6 +156,17 @@ import static org.wso2.carbon.identity.organization.management.service.constant.
 public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
     private static final Log log = LogFactory.getLog(OrganizationAuthenticator.class);
+    private static final String samlSSOResponseFormPostPageTemplate = "<html>\n" +
+            "<body onload=\"javascript:document.getElementById('samlsso-response-form').submit()\">\n" +
+            "<h2>Please wait while we take you back to $app</h2>\n" +
+            "<p><a href=\"javascript:document.getElementById('samlsso-response-form').submit()\">Click here</a>" +
+            " if you have been waiting for too long.</p>\n" +
+            "<form id=\"samlsso-response-form\" method=\"post\" action=\"$loginPage\">\n" +
+            "    <!--$params-->\n" +
+            "    <!--$additionalParams-->\n" +
+            "</form>\n" +
+            "</body>\n" +
+            "</html>";
 
     @Override
     public String getFriendlyName() {
@@ -171,8 +190,59 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         // Check if the "organizationLoginFailure" property in the context,
         // when added in shared application client exception check.
         if (!context.getProperties().containsKey(ORGANIZATION_LOGIN_FAILURE)) {
-            super.initiateAuthenticationRequest(request, response, context);
+            if (request.getParameter(AuthenticatorConstants.SAML_RESP) == null) {
+                super.initiateAuthenticationRequest(request, response, context);
+            } else {
+                DiagnosticLog.DiagnosticLogBuilder diagnosticLogBuilder = null;
+                if (LoggerUtils.isDiagnosticLogsEnabled() && context.getAuthenticatorProperties() != null) {
+                    diagnosticLogBuilder = new DiagnosticLog.DiagnosticLogBuilder(
+                            getComponentId(), INITIATE_OUTBOUND_AUTH_REQUEST);
+                    diagnosticLogBuilder.logDetailLevel(DiagnosticLog.LogDetailLevel.APPLICATION)
+                            .resultStatus(DiagnosticLog.ResultStatus.SUCCESS)
+                            .inputParam(LogConstants.InputKeys.STEP, context.getCurrentStep())
+                            .inputParam("authenticator properties", context.getAuthenticatorProperties().keySet())
+                            .inputParam(LogConstants.InputKeys.IDP, context.getExternalIdP().getIdPName())
+                            .inputParams(getApplicationDetails(context));
+                }
+                String loginPage = super.prepareLoginPage(request, context);
+                try {
+                    generateSamlPostPage(response, loginPage, request.getParameter(AuthenticatorConstants.SAML_RESP));
+                    if (LoggerUtils.isDiagnosticLogsEnabled() && diagnosticLogBuilder != null) {
+                        String scopes = extractScopesFromURL(loginPage);
+                        if (StringUtils.isNotEmpty(scopes)) {
+                            diagnosticLogBuilder.inputParam("scopes", scopes);
+                        }
+                        diagnosticLogBuilder.resultMessage("Redirecting to organization's authorize endpoint.");
+                        LoggerUtils.triggerDiagnosticLogEvent(diagnosticLogBuilder);
+                    }
+                } catch (IOException e) {
+                    throw new AuthenticationFailedException(
+                            OIDCErrorConstants.ErrorMessages.IO_ERROR.getCode(), e.getMessage(), e);
+                }
+            }
         }
+    }
+
+    @SuppressFBWarnings(
+            value = "XSS_SERVLET",
+            justification = "Passed HTML content is provided from the server side. " +
+                    "The only request passed param ('samlMessage') is sanitized with encoding."
+    )
+    private void generateSamlPostPage(HttpServletResponse resp, String loginPage, String samlMessage)
+            throws IOException {
+
+        String pageWithLoginPage = samlSSOResponseFormPostPageTemplate.replace("$loginPage", loginPage);
+        String pageWithApp = pageWithLoginPage.replace("$app", loginPage);
+
+        StringBuilder hiddenInputBuilder = new StringBuilder();
+        hiddenInputBuilder.append("<!--$params-->\n").append("<input type='hidden' name='")
+                .append(AuthenticatorConstants.SAML_RESP)
+                .append("' value='").append(Encode.forHtmlAttribute(samlMessage)).append("'/>");
+        String finalPage = pageWithApp.replace("<!--$params-->",
+                hiddenInputBuilder.toString());
+
+        PrintWriter out = resp.getWriter();
+        out.print(finalPage);
     }
 
     @Override
