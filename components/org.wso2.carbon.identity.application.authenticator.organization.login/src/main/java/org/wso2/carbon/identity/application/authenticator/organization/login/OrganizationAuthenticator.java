@@ -206,7 +206,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                 }
                 String loginPage = super.prepareLoginPage(request, context);
                 try {
-                    generateSamlPostPage(response, loginPage, request.getParameter(AuthenticatorConstants.SAML_RESP));
+                    generateSamlPostPage(response, loginPage,
+                            request.getParameter(AuthenticatorConstants.SAML_RESP), context);
                     if (LoggerUtils.isDiagnosticLogsEnabled() && diagnosticLogBuilder != null) {
                         String scopes = extractScopesFromURL(loginPage);
                         if (StringUtils.isNotEmpty(scopes)) {
@@ -228,11 +229,16 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             justification = "Passed HTML content is provided from the server side. " +
                     "The only request passed param ('samlMessage') is sanitized with encoding."
     )
-    private void generateSamlPostPage(HttpServletResponse resp, String loginPage, String samlMessage)
-            throws IOException {
+    private void generateSamlPostPage(HttpServletResponse resp, String loginPage, String samlMessage,
+                                      AuthenticationContext context) throws IOException {
 
         String pageWithLoginPage = samlSSOResponseFormPostPageTemplate.replace("$loginPage", loginPage);
         String pageWithApp = pageWithLoginPage.replace("$app", loginPage);
+
+        String spName = getApplicationDetails(context).get("application name");
+        if (StringUtils.isNotBlank(spName)) {
+            pageWithApp = pageWithLoginPage.replace("$app", spName);
+        }
 
         StringBuilder hiddenInputBuilder = new StringBuilder();
         hiddenInputBuilder.append("<!--$params-->\n").append("<input type='hidden' name='")
