@@ -324,7 +324,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
             // Update the authenticator configurations based on the user's organization.
             String clientId = oidcConfigurations.getInboundAuthKey();
-            OAuthConsumerAppDTO oauthApp = getOAuthAdminService().getOAuthApplicationData(clientId);
+            OAuthConsumerAppDTO oauthApp = getOAuthAdminService()
+                    .getOAuthApplicationData(clientId, sharedOrgTenantDomain);
 
             authenticatorProperties.put(CLIENT_ID, clientId);
             authenticatorProperties.put(CLIENT_SECRET, oauthApp.getOauthConsumerSecret());
