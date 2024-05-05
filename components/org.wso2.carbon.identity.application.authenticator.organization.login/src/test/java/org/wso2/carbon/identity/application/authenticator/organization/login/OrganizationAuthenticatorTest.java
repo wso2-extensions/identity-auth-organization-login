@@ -331,7 +331,7 @@ public class OrganizationAuthenticatorTest {
 
         when(mockInboundAuthenticationConfig.getInboundAuthenticationRequestConfigs()).thenReturn(inbounds);
 
-        when(authenticatorDataHolder.getOAuthAdminService().getOAuthApplicationData(anyString()))
+        when(authenticatorDataHolder.getOAuthAdminService().getOAuthApplicationData(anyString(), anyString()))
                 .thenReturn(mockOAuthConsumerAppDTO);
         when(mockOAuthConsumerAppDTO.getOauthConsumerSecret()).thenReturn(secretKey);
 
