@@ -52,6 +52,7 @@ public class AuthenticatorConstants {
     public static final String ORGANIZATION_NAME = "orgName";
     public static final String ENABLE_CONFIG = ".enable";
     public static final String LOGIN_HINT_PARAMETER = "login_hint";
+    public static final String SP_ID_PARAMETER = "spId";
 
     public static final String ORGANIZATION_LOGIN_FAILURE = "organizationLoginFailure";
     public static final String ERROR_MESSAGE = "&authFailure=true&authFailureMsg=";
