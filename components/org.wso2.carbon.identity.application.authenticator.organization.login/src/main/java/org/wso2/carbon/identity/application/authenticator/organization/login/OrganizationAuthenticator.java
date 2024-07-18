@@ -127,6 +127,7 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL_CONFIG;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_SELECT_PAGE_URL;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SP_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.TOKEN_ENDPOINT_ORGANIZATION_PATH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USERINFO_ENDPOINT_ORGANIZATION_PATH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USERINFO_URL;
@@ -580,6 +581,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                     .append(urlEncode(context.getContextIdentifier()));
             addQueryParam(queryStringBuilder, IDP_PARAMETER, context.getExternalIdP().getName());
             addQueryParam(queryStringBuilder, AUTHENTICATOR_PARAMETER, getName());
+            addQueryParam(queryStringBuilder, SP_ID_PARAMETER, context.getServiceProviderResourceId());
             boolean discoveryEnabled = isOrganizationDiscoveryEnabled(context);
             if (discoveryEnabled) {
                 addQueryParam(queryStringBuilder, ORG_DISCOVERY_ENABLED_PARAMETER, "true");

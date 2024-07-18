@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2024, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -94,6 +94,7 @@ public class OrganizationAuthenticatorTest {
     private static final String orgId = "ef35863f-58f0-4a18-aef1-a8d9dd20cfbe";
     private static final String org = "greater";
     private static final String saasApp = "medlife";
+    private static final String saasAppResourceId = "4f412c8a-ace8-4189-bbfb-c7c0d93b8662";
     private static final String saasAppOwnedTenant = "carbon.super";
     private static final String saasAppOwnedOrgId = "10084a8d-113f-4211-a0d5-efe36b082211";
     private static final String clientId = "3_TCRZ93rTQtPL8k02_trEYTfVca";
@@ -221,6 +222,7 @@ public class OrganizationAuthenticatorTest {
 
         when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
         when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        when(mockAuthenticationContext.getServiceProviderResourceId()).thenReturn(saasAppResourceId);
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
 
         when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
@@ -243,6 +245,7 @@ public class OrganizationAuthenticatorTest {
 
         when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
         when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        when(mockAuthenticationContext.getServiceProviderResourceId()).thenReturn(saasAppResourceId);
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
 
         when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
@@ -289,6 +292,7 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
         when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
         when(mockAuthenticationContext.getServiceProviderName()).thenReturn(saasApp);
+        when(mockAuthenticationContext.getServiceProviderResourceId()).thenReturn(saasAppResourceId);
         when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
         when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
 
