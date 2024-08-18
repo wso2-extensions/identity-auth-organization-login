@@ -522,6 +522,10 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private boolean validateDiscoveryAttributeValue(String discoveryInput, AuthenticationContext context,
                                                     HttpServletResponse response) throws AuthenticationFailedException {
 
+        // Check organization discovery is enabled.
+        if (!isOrganizationDiscoveryEnabled(context)) {
+            return false;
+        }
         String appResideOrgId = getOrgIdByTenantDomain(context.getLoginTenantDomain());
         Object discoveryType = context.getProperty(ORGANIZATION_DISCOVERY_TYPE);
         try {
