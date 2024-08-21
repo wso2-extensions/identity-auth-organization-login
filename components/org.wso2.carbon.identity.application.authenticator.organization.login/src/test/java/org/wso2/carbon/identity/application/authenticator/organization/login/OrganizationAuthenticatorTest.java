@@ -62,7 +62,6 @@ import org.wso2.carbon.user.core.tenant.TenantManager;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -469,20 +468,17 @@ public class OrganizationAuthenticatorTest {
 
         return new Object[][]{
                 // When the given discovery type is not valid.
-                {userEmailWithValidDomain, invalidDiscoveryType, new ArrayList<>(Collections.singletonList(
-                        new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG, "true")))},
+                {userEmailWithValidDomain, invalidDiscoveryType, true},
                 // When the given discovery type is valid but not enabled.
-                {userEmailWithValidDomain, emailDomainDiscoveryType, new ArrayList<>(Collections.singletonList(
-                        new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG, "false")))},
+                {userEmailWithValidDomain, emailDomainDiscoveryType, false},
                 // When the given email domain of the user email is invalid.
-                {userEmailWithInvalidDomain, emailDomainDiscoveryType, new ArrayList<>(Collections.singletonList(
-                        new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG, "true")))}
+                {userEmailWithInvalidDomain, emailDomainDiscoveryType, true}
         };
     }
 
     @Test(dataProvider = "invalidOrgDiscoveryParams")
     public void testProcessWithInvalidOrgDiscoveryParam(String userEmail, String discoveryType,
-                                                        List<ConfigProperty> configProperties) throws Exception {
+                                                        boolean isEmailDomainDiscoveryEnabled) throws Exception {
 
         Map<String, String[]> mockParamMap = new HashMap<>();
         mockParamMap.put(LOGIN_HINT_PARAMETER, new String[]{userEmail});
@@ -493,6 +489,9 @@ public class OrganizationAuthenticatorTest {
 
         when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
                 .thenReturn(mockDiscoveryConfig);
+        List<ConfigProperty> configProperties = new ArrayList<>();
+        configProperties.add(new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG,
+                String.valueOf(isEmailDomainDiscoveryEnabled)));
         when(mockDiscoveryConfig.getConfigProperties()).thenReturn(configProperties);
 
         Map<String, AttributeBasedOrganizationDiscoveryHandler> discoveryHandlers = new HashMap<>();
