@@ -532,9 +532,9 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
      * Validates given login_hint parameter.
      *
      * @param loginHintInput Given login_hint parameter value.
+     * @param context        Authentication context.
      * @param request        Servlet request.
      * @param response       Servlet response.
-     * @param context        Authentication context.
      * @return True if the login_hint parameter is valid.
      * @throws AuthenticationFailedException If an error occurs while validating login_hint parameter.
      */
