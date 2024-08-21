@@ -18,11 +18,13 @@
 
 package org.wso2.carbon.identity.application.authenticator.organization.login;
 
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.wso2.carbon.base.CarbonBaseConstants;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
@@ -43,7 +45,10 @@ import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
 import org.wso2.carbon.identity.oauth.dto.OAuthConsumerAppDTO;
 import org.wso2.carbon.identity.organization.config.service.OrganizationConfigManager;
+import org.wso2.carbon.identity.organization.config.service.model.ConfigProperty;
 import org.wso2.carbon.identity.organization.config.service.model.DiscoveryConfig;
+import org.wso2.carbon.identity.organization.discovery.service.AttributeBasedOrganizationDiscoveryHandler;
+import org.wso2.carbon.identity.organization.discovery.service.OrganizationDiscoveryManager;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementServerException;
@@ -57,6 +62,7 @@ import org.wso2.carbon.user.core.tenant.TenantManager;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,11 +75,15 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_ID;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_FRIENDLY_NAME;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_NAME;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ENABLE_CONFIG;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.LOGIN_HINT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.OIDC_CLAIM_DIALECT_URL;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_DISCOVERY_TYPE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_PARAMETER;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_APPLICATION_NOT_SHARED;
@@ -99,6 +109,11 @@ public class OrganizationAuthenticatorTest {
     private static final String saasAppOwnedOrgId = "10084a8d-113f-4211-a0d5-efe36b082211";
     private static final String clientId = "3_TCRZ93rTQtPL8k02_trEYTfVca";
     private static final String secretKey = "uW4q6dYgSaHJIv11Llqi1nvOQBUa";
+
+    private static final String emailDomainDiscoveryType = "emailDomain";
+    private static final String invalidDiscoveryType = "invalidDiscoveryType";
+    private static final String userEmailWithValidDomain = "john@wso2.com";
+    private static final String userEmailWithInvalidDomain = "john@incorrect.wso2.com";
 
     private static Map<String, String> authenticatorParamProperties;
     private static Map<String, String> authenticatorProperties;
@@ -126,6 +141,9 @@ public class OrganizationAuthenticatorTest {
     private DiscoveryConfig mockDiscoveryConfig;
     private MockedStatic<IdentityTenantUtil> mockedUtilities;
 
+    @Mock
+    private OrganizationDiscoveryManager mockOrganizationDiscoveryManager;
+
     @BeforeClass
     public void setUp() {
 
@@ -136,6 +154,7 @@ public class OrganizationAuthenticatorTest {
     @BeforeMethod
     public void init() throws UserStoreException {
 
+        initMocks(this);
         mockServletRequest = mock(HttpServletRequest.class);
         mockServletResponse = mock(HttpServletResponse.class);
         mockAuthenticationContext = mock(AuthenticationContext.class);
@@ -167,6 +186,7 @@ public class OrganizationAuthenticatorTest {
         authenticatorDataHolder.setApplicationManagementService(mockApplicationManagementService);
         authenticatorDataHolder.setClaimMetadataManagementService(mockClaimMetadataManagementService);
         authenticatorDataHolder.setOrganizationConfigManager(mockOrganizationConfigManager);
+        authenticatorDataHolder.setOrganizationDiscoveryManager(mockOrganizationDiscoveryManager);
         Tenant tenant = mock(Tenant.class);
         TenantManager mockTenantManager = mock(TenantManager.class);
         when(mockRealmService.getTenantManager()).thenReturn(mockTenantManager);
@@ -442,6 +462,60 @@ public class OrganizationAuthenticatorTest {
 
         organizationAuthenticator.initiateAuthenticationRequest(mockServletRequest, mockServletResponse,
                 mockAuthenticationContext);
+    }
+
+    @DataProvider(name = "invalidOrgDiscoveryParams")
+    public Object[][] getInvalidOrgDiscoveryParams() {
+
+        return new Object[][]{
+                // When the given discovery type is not valid.
+                {userEmailWithValidDomain, invalidDiscoveryType, new ArrayList<>(Collections.singletonList(
+                        new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG, "true")))},
+                // When the given discovery type is valid but not enabled.
+                {userEmailWithValidDomain, emailDomainDiscoveryType, new ArrayList<>(Collections.singletonList(
+                        new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG, "false")))},
+                // When the given email domain of the user email is invalid.
+                {userEmailWithInvalidDomain, emailDomainDiscoveryType, new ArrayList<>(Collections.singletonList(
+                        new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG, "true")))}
+        };
+    }
+
+    @Test(dataProvider = "invalidOrgDiscoveryParams")
+    public void testProcessWithInvalidOrgDiscoveryParam(String userEmail, String discoveryType,
+                                                        List<ConfigProperty> configProperties) throws Exception {
+
+        Map<String, String[]> mockParamMap = new HashMap<>();
+        mockParamMap.put(LOGIN_HINT_PARAMETER, new String[]{userEmail});
+        mockParamMap.put(ORGANIZATION_DISCOVERY_TYPE, new String[]{discoveryType});
+        when(mockServletRequest.getParameterMap()).thenReturn(mockParamMap);
+        when(mockServletRequest.getParameter(LOGIN_HINT_PARAMETER)).thenReturn(userEmail);
+        when(mockServletRequest.getParameter(ORGANIZATION_DISCOVERY_TYPE)).thenReturn(discoveryType);
+
+        when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
+                .thenReturn(mockDiscoveryConfig);
+        when(mockDiscoveryConfig.getConfigProperties()).thenReturn(configProperties);
+
+        Map<String, AttributeBasedOrganizationDiscoveryHandler> discoveryHandlers = new HashMap<>();
+        AttributeBasedOrganizationDiscoveryHandler discoveryHandler =
+                mock(AttributeBasedOrganizationDiscoveryHandler.class);
+        discoveryHandlers.put(emailDomainDiscoveryType, discoveryHandler);
+        when(authenticatorDataHolder.getOrganizationDiscoveryManager().getAttributeBasedOrganizationDiscoveryHandlers())
+                .thenReturn(discoveryHandlers);
+
+        when(mockAuthenticationContext.getLoginTenantDomain()).thenReturn(saasAppOwnedTenant);
+        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(saasAppOwnedTenant)).thenReturn(
+                saasAppOwnedOrgId);
+        when(authenticatorDataHolder.getOrganizationDiscoveryManager()
+                .getOrganizationIdByDiscoveryAttribute(discoveryType, userEmail, saasAppOwnedOrgId)).thenReturn(null);
+
+        when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
+        when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        when(mockAuthenticationContext.getServiceProviderResourceId()).thenReturn(saasAppResourceId);
+        when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
+
+        AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
+                mockAuthenticationContext);
+        Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
     }
 
     private void setMockContextParamForValidOrganization() {
