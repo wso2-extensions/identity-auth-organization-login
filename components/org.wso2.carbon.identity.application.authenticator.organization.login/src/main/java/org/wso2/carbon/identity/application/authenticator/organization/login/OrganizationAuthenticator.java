@@ -143,6 +143,7 @@ import static org.wso2.carbon.identity.organization.management.service.constant.
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_ORGANIZATION_NAME_BY_ID;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_VALIDATING_ORGANIZATION_DISCOVERY_ATTRIBUTE;
+import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_VALIDATING_ORGANIZATION_LOGIN_HINT_ATTRIBUTE;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_INVALID_APPLICATION;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_INVALID_ORGANIZATION_ID;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ORGANIZATION_NOT_FOUND_FOR_TENANT;
@@ -168,6 +169,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             "</form>\n" +
             "</body>\n" +
             "</html>";
+    private static final String EMAIL_DOMAIN_DISCOVERY_TYPE = "emailDomain";
 
     @Override
     public String getFriendlyName() {
@@ -407,6 +409,13 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             context.setProperty(ORG_ID_PARAMETER, organizationId);
             String organizationName = getOrganizationNameById(organizationId);
             context.setProperty(ORG_PARAMETER, organizationName);
+        } else if (request.getParameterMap().containsKey(LOGIN_HINT_PARAMETER)) {
+            String loginHint = request.getParameter(LOGIN_HINT_PARAMETER);
+            context.setProperty(ORG_DISCOVERY_PARAMETER, loginHint);
+            if (!validateLoginHintAttributeValue(loginHint, context, request, response)) {
+                context.removeProperty(ORG_DISCOVERY_PARAMETER);
+                return AuthenticatorFlowStatus.INCOMPLETE;
+            }
         } else if (request.getParameterMap().containsKey(ORG_DISCOVERY_PARAMETER)) {
             String discoveryInput = request.getParameter(ORG_DISCOVERY_PARAMETER);
             context.setProperty(ORG_DISCOVERY_PARAMETER, discoveryInput);
@@ -517,6 +526,49 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME, e);
         }
         return false;
+    }
+
+    /**
+     * Validates given login_hint parameter.
+     *
+     * @param loginHintInput Given login_hint parameter value.
+     * @param context        Authentication context.
+     * @param request        Servlet request.
+     * @param response       Servlet response.
+     * @return True if the login_hint parameter is valid.
+     * @throws AuthenticationFailedException If an error occurs while validating login_hint parameter.
+     */
+    private boolean validateLoginHintAttributeValue(String loginHintInput, AuthenticationContext context,
+                                                    HttpServletRequest request, HttpServletResponse response)
+            throws AuthenticationFailedException {
+
+        // Default discovery type is set to `emailDomain`.
+        String discoveryType = EMAIL_DOMAIN_DISCOVERY_TYPE;
+        if (request.getParameterMap().containsKey(ORGANIZATION_DISCOVERY_TYPE)) {
+            discoveryType = request.getParameter(ORGANIZATION_DISCOVERY_TYPE);
+        }
+
+        if (!isOrganizationDiscoveryTypeEnabled(discoveryType)) {
+            context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Organization discovery type is invalid or not enabled");
+            redirectToOrgDiscoveryInputCapture(response, context);
+            return false;
+        }
+        context.setProperty(ORGANIZATION_DISCOVERY_TYPE, discoveryType);
+
+        try {
+            String appResideOrgId = getOrgIdByTenantDomain(context.getLoginTenantDomain());
+            String organizationId = getOrganizationDiscoveryManager().getOrganizationIdByDiscoveryAttribute
+                    (discoveryType, loginHintInput, appResideOrgId);
+            if (StringUtils.isNotBlank(organizationId)) {
+                context.setProperty(ORG_ID_PARAMETER, organizationId);
+                return true;
+            }
+            context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Can't identify organization");
+            redirectToOrgDiscoveryInputCapture(response, context);
+            return false;
+        } catch (OrganizationManagementException e) {
+            throw handleAuthFailures(ERROR_CODE_ERROR_VALIDATING_ORGANIZATION_LOGIN_HINT_ATTRIBUTE, e);
+        }
     }
 
     private boolean validateDiscoveryAttributeValue(String discoveryInput, AuthenticationContext context,
@@ -648,6 +700,38 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                     .append(Constants.DIRECT);
         }
         return paramBuilder.toString();
+    }
+
+    /**
+     * Check whether the given organization discovery type is enabled.
+     *
+     * @param discoveryType Organization discovery type.
+     * @return True if the organization discovery type is enabled.
+     * @throws AuthenticationFailedException If an error occurs while checking the organization discovery type.
+     */
+    private boolean isOrganizationDiscoveryTypeEnabled(String discoveryType)
+            throws AuthenticationFailedException {
+
+        try {
+            DiscoveryConfig discoveryConfig = getOrganizationConfigManager().getDiscoveryConfiguration();
+            Map<String, AttributeBasedOrganizationDiscoveryHandler> discoveryHandlers =
+                    getOrganizationDiscoveryManager().getAttributeBasedOrganizationDiscoveryHandlers();
+
+            List<ConfigProperty> configProperties = discoveryConfig.getConfigProperties();
+            for (ConfigProperty configProperty : configProperties) {
+                String type = configProperty.getKey().split(ENABLE_CONFIG)[0];
+                if (discoveryType.equals(type) && discoveryHandlers.get(type) != null &&
+                        Boolean.parseBoolean(configProperty.getValue())) {
+                    return true;
+                }
+            }
+        } catch (OrganizationConfigException e) {
+            if (ERROR_CODE_DISCOVERY_CONFIG_NOT_EXIST.getCode().equals(e.getErrorCode())) {
+                return false;
+            }
+            throw handleAuthFailures(ERROR_CODE_ERROR_GETTING_ORGANIZATION_DISCOVERY_CONFIG, e);
+        }
+        return false;
     }
 
     private boolean isOrganizationDiscoveryEnabled(AuthenticationContext context) throws AuthenticationFailedException {
