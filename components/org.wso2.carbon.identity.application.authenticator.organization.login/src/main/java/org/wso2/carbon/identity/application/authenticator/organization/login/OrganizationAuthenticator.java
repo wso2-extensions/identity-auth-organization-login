@@ -549,7 +549,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         }
 
         if (!isOrganizationDiscoveryTypeEnabled(discoveryType)) {
-            context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Organization discovery type is invalid or not enabled");
+            context.setProperty(ORGANIZATION_LOGIN_FAILURE, "invalid.organization.discovery.type");
             redirectToOrgDiscoveryInputCapture(response, context);
             return false;
         }
