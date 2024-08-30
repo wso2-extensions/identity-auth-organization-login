@@ -82,7 +82,7 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.LOGIN_HINT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.OIDC_CLAIM_DIALECT_URL;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_DISCOVERY_TYPE;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_TYPE_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_PARAMETER;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_APPLICATION_NOT_SHARED;
@@ -482,10 +482,10 @@ public class OrganizationAuthenticatorTest {
 
         Map<String, String[]> mockParamMap = new HashMap<>();
         mockParamMap.put(LOGIN_HINT_PARAMETER, new String[]{userEmail});
-        mockParamMap.put(ORGANIZATION_DISCOVERY_TYPE, new String[]{discoveryType});
+        mockParamMap.put(ORG_DISCOVERY_TYPE_PARAMETER, new String[]{discoveryType});
         when(mockServletRequest.getParameterMap()).thenReturn(mockParamMap);
         when(mockServletRequest.getParameter(LOGIN_HINT_PARAMETER)).thenReturn(userEmail);
-        when(mockServletRequest.getParameter(ORGANIZATION_DISCOVERY_TYPE)).thenReturn(discoveryType);
+        when(mockServletRequest.getParameter(ORG_DISCOVERY_TYPE_PARAMETER)).thenReturn(discoveryType);
 
         when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
                 .thenReturn(mockDiscoveryConfig);

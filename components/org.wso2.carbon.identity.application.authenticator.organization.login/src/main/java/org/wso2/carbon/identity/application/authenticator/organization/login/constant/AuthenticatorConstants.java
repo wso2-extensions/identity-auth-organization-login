@@ -47,6 +47,7 @@ public class AuthenticatorConstants {
     public static final String ORG_DESCRIPTION_PARAMETER = "orgDesc";
     public static final String ORG_DISCOVERY_PARAMETER = "orgDiscovery";
     public static final String ORG_DISCOVERY_ENABLED_PARAMETER = "orgDiscoveryEnabled";
+    public static final String ORG_DISCOVERY_TYPE_PARAMETER = "orgDiscoveryType";
     public static final String PROMPT_PARAMETER = "prompt";
     public static final String ORGANIZATION_DISCOVERY_TYPE = "discoveryType";
     public static final String ORGANIZATION_NAME = "orgName";
