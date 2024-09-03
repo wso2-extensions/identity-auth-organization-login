@@ -120,6 +120,7 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DESCRIPTION_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_ENABLED_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_PARAMETER;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_TYPE_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.PROMPT_PARAMETER;
@@ -544,8 +545,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
 
         // Default discovery type is set to `emailDomain`.
         String discoveryType = EMAIL_DOMAIN_DISCOVERY_TYPE;
-        if (request.getParameterMap().containsKey(ORGANIZATION_DISCOVERY_TYPE)) {
-            discoveryType = request.getParameter(ORGANIZATION_DISCOVERY_TYPE);
+        if (request.getParameterMap().containsKey(ORG_DISCOVERY_TYPE_PARAMETER)) {
+            discoveryType = request.getParameter(ORG_DISCOVERY_TYPE_PARAMETER);
         }
 
         if (!isOrganizationDiscoveryTypeEnabled(discoveryType)) {
