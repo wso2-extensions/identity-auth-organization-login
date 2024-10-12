@@ -700,6 +700,9 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             paramBuilder.append(AMPERSAND_SIGN).append(Constants.RESPONSE_MODE).append(EQUAL_SIGN)
                     .append(Constants.DIRECT);
         }
+
+        paramBuilder.append(AMPERSAND_SIGN).append("fidp").append(EQUAL_SIGN).append("${sub_org_idp}");
+
         return paramBuilder.toString();
     }
 
