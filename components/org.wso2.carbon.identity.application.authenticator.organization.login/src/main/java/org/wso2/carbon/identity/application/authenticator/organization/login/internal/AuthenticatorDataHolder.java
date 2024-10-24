@@ -46,6 +46,9 @@ public class AuthenticatorDataHolder {
     private OrganizationConfigManager organizationConfigManager;
     private OrganizationDiscoveryManager organizationDiscoveryManager;
 
+    private boolean useSamlSsoResponseHtmlPage = false;
+    private String samlSsoResponseHtmlPage = null;
+
     public static AuthenticatorDataHolder getInstance() {
 
         return instance;
@@ -129,5 +132,25 @@ public class AuthenticatorDataHolder {
     public void setOrganizationDiscoveryManager(OrganizationDiscoveryManager organizationDiscoveryManager) {
 
         this.organizationDiscoveryManager = organizationDiscoveryManager;
+    }
+
+    public boolean isSamlSsoResponseHtmlPageAvailable() {
+
+        return useSamlSsoResponseHtmlPage;
+    }
+
+    public void setUseSamlSsoResponseHtmlPage(boolean useSamlSsoResponseHtmlPage) {
+
+        this.useSamlSsoResponseHtmlPage = useSamlSsoResponseHtmlPage;
+    }
+
+    public String getSamlSsoResponseHtmlPage() {
+
+        return samlSsoResponseHtmlPage;
+    }
+
+    public void setSamlSsoResponseHtmlPage(String samlSsoResponseHtmlPage) {
+
+        this.samlSsoResponseHtmlPage = samlSsoResponseHtmlPage;
     }
 }
