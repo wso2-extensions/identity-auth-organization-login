@@ -17,6 +17,7 @@
  */
 package org.wso2.carbon.identity.application.authenticator.organization.login.internal;
 
+import org.apache.commons.lang.StringUtils;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.oauth.OAuthAdminServiceImpl;
@@ -47,7 +48,7 @@ public class AuthenticatorDataHolder {
     private OrganizationDiscoveryManager organizationDiscoveryManager;
 
     private boolean useSamlSsoResponseHtmlPage = false;
-    private String samlSsoResponseHtmlPage = null;
+    private String samlSsoResponseHtmlPage = StringUtils.EMPTY;
 
     public static AuthenticatorDataHolder getInstance() {
 
@@ -134,21 +135,41 @@ public class AuthenticatorDataHolder {
         this.organizationDiscoveryManager = organizationDiscoveryManager;
     }
 
+    /**
+     * Check whether the SAML SSO response HTML page is available.
+     *
+     * @return True if the SAML SSO response HTML page is available.
+     */
     public boolean isSamlSsoResponseHtmlPageAvailable() {
 
         return useSamlSsoResponseHtmlPage;
     }
 
+    /**
+     * Set whether the SAML SSO response HTML page is available.
+     *
+     * @param useSamlSsoResponseHtmlPage True if the SAML SSO response HTML page is available.
+     */
     public void setUseSamlSsoResponseHtmlPage(boolean useSamlSsoResponseHtmlPage) {
 
         this.useSamlSsoResponseHtmlPage = useSamlSsoResponseHtmlPage;
     }
 
+    /**
+     * Get the SAML SSO response HTML page.
+     *
+     * @return SAML SSO response HTML page.
+     */
     public String getSamlSsoResponseHtmlPage() {
 
         return samlSsoResponseHtmlPage;
     }
 
+    /**
+     * Set the SAML SSO response HTML page.
+     *
+     * @param samlSsoResponseHtmlPage SAML SSO response HTML page.
+     */
     public void setSamlSsoResponseHtmlPage(String samlSsoResponseHtmlPage) {
 
         this.samlSsoResponseHtmlPage = samlSsoResponseHtmlPage;
