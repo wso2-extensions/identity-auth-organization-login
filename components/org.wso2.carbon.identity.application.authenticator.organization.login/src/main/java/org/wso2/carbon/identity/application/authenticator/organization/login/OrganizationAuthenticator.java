@@ -208,7 +208,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                             .inputParam(LogConstants.InputKeys.IDP, context.getExternalIdP().getIdPName())
                             .inputParams(getApplicationDetails(context));
                 }
-                String loginPage = super.prepareLoginPage(request, context);
+                String loginPage = prepareLoginPage(request, context);
                 try {
                     generateSamlPostPage(response, loginPage,
                             request.getParameter(AuthenticatorConstants.SAML_RESP), context);
@@ -1027,5 +1027,12 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
          */
         Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
         return authenticatorProperties.get(CALLBACK_URL);
+    }
+
+    @Override
+    protected String prepareLoginPage(HttpServletRequest request, AuthenticationContext context)
+            throws AuthenticationFailedException {
+
+        return super.prepareLoginPage(request, context);
     }
 }
