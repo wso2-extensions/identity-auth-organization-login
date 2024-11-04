@@ -129,10 +129,12 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL_CONFIG;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_SELECT_PAGE_URL;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SELF_REGISTRATION_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SP_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.TOKEN_ENDPOINT_ORGANIZATION_PATH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USERINFO_ENDPOINT_ORGANIZATION_PATH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USERINFO_URL;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USERNAME_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.USER_ORGANIZATION_CLAIM;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.OAuth2.CALLBACK_URL;
 import static org.wso2.carbon.identity.organization.config.service.constant.OrganizationConfigConstants.ErrorMessages.ERROR_CODE_DISCOVERY_CONFIG_NOT_EXIST;
@@ -407,6 +409,10 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             return super.process(request, response, context);
         }
 
+        if (request.getParameter(SELF_REGISTRATION_PARAMETER) != null) {
+            context.setProperty(SELF_REGISTRATION_PARAMETER, request.getParameter(SELF_REGISTRATION_PARAMETER));
+        }
+
         /**
          * First priority for organization Id.
          * Check for the organization Id in the request attribute first since the organization Id is set in the
@@ -672,6 +678,11 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                         .append(urlEncode((String) context.getProperties().get(ORGANIZATION_LOGIN_FAILURE)));
             }
 
+            if (context.getProperty(SELF_REGISTRATION_PARAMETER) != null) {
+                addQueryParam(queryStringBuilder, SELF_REGISTRATION_PARAMETER,
+                        (String) context.getProperty(SELF_REGISTRATION_PARAMETER));
+            }
+
             String url;
             if (redirectToOrgNameCapture) {
                 url = FrameworkUtils.appendQueryParamsStringToUrl(getOrganizationRequestPageUrl(context),
@@ -712,6 +723,19 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             paramBuilder.append(AMPERSAND_SIGN).append(Constants.RESPONSE_MODE).append(EQUAL_SIGN)
                     .append(Constants.DIRECT);
         }
+
+        if (context.getProperty(SELF_REGISTRATION_PARAMETER) != null) {
+            paramBuilder.append(AMPERSAND_SIGN).append(SELF_REGISTRATION_PARAMETER).append(EQUAL_SIGN)
+                    .append(context.getProperty(SELF_REGISTRATION_PARAMETER));
+
+            // Used to auto complete the username in self-registration page.
+            if (context.getProperty(ORG_DISCOVERY_PARAMETER) != null &&
+                    EMAIL_DOMAIN_DISCOVERY_TYPE.equals(context.getProperty(ORGANIZATION_DISCOVERY_TYPE))) {
+                paramBuilder.append(AMPERSAND_SIGN).append(USERNAME_PARAMETER).append(EQUAL_SIGN)
+                        .append(context.getProperty(ORG_DISCOVERY_PARAMETER));
+            }
+        }
+
         return paramBuilder.toString();
     }
 

@@ -49,6 +49,8 @@ public class AuthenticatorConstants {
     public static final String ORG_DISCOVERY_ENABLED_PARAMETER = "orgDiscoveryEnabled";
     public static final String ORG_DISCOVERY_TYPE_PARAMETER = "orgDiscoveryType";
     public static final String PROMPT_PARAMETER = "prompt";
+    public static final String SELF_REGISTRATION_PARAMETER = "isSelfRegistration";
+    public static final String USERNAME_PARAMETER = "discoveredUsername";
     public static final String ORGANIZATION_DISCOVERY_TYPE = "discoveryType";
     public static final String ORGANIZATION_NAME = "orgName";
     public static final String ENABLE_CONFIG = ".enable";
