@@ -94,6 +94,7 @@ import javax.servlet.http.HttpServletResponse;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.SESSION_DATA_KEY;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_ID;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_SECRET;
+import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.IS_BASIC_AUTH_ENABLED;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.IdPConfParams.OIDC_LOGOUT_URL;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.LogConstants.ActionIDs.INITIATE_OUTBOUND_AUTH_REQUEST;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.OAUTH2_AUTHZ_URL;
@@ -331,6 +332,10 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             OAuthConsumerAppDTO oauthApp = getOAuthAdminService()
                     .getOAuthApplicationData(clientId, sharedOrgTenantDomain);
 
+            // Enable BasicAuth flow if shared app is a public client.
+            if (oauthApp.isBypassClientCredentials()) {
+                authenticatorProperties.put(IS_BASIC_AUTH_ENABLED, "true");
+            }
             authenticatorProperties.put(CLIENT_ID, clientId);
             authenticatorProperties.put(CLIENT_SECRET, oauthApp.getOauthConsumerSecret());
             authenticatorProperties.put(ORGANIZATION_ATTRIBUTE, sharedOrgId);
