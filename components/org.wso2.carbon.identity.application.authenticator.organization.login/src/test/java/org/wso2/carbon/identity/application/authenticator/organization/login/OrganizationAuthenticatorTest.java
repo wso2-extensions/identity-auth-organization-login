@@ -55,6 +55,7 @@ import org.wso2.carbon.identity.organization.discovery.service.AttributeBasedOrg
 import org.wso2.carbon.identity.organization.discovery.service.OrganizationDiscoveryManager;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
+import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementServerException;
 import org.wso2.carbon.identity.organization.management.service.model.BasicOrganization;
 import org.wso2.carbon.identity.organization.management.service.model.Organization;
@@ -364,19 +365,18 @@ public class OrganizationAuthenticatorTest {
         mockParamMap.put(ORG_ID_PARAMETER, new String[]{orgId});
         when(mockServletRequest.getParameterMap()).thenReturn(mockParamMap);
         when(mockServletRequest.getParameter(ORG_ID_PARAMETER)).thenReturn(orgId);
-        when(authenticatorDataHolder.getOrganizationManager().getOrganizationNameById(anyString()))
-                .thenReturn(org);
+
+        mockOrganizationManager();
 
         authenticatorParamProperties.put(ORG_PARAMETER, "");
         when(organizationAuthenticator.getRuntimeParams(mockAuthenticationContext))
                 .thenReturn(authenticatorParamProperties);
         when(mockAuthenticationContext.getServiceProviderName()).thenReturn(saasApp);
         when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
-        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(anyString()))
-                .thenReturn(saasAppOwnedOrgId);
+
         setMockContextParamForValidOrganization();
-        when(authenticatorDataHolder.getOrgApplicationManager()
-                .resolveSharedApplication(anyString(), anyString(), anyString())).thenReturn(mockServiceProvider);
+        mockOrgApplicationManager();
+
         when(mockServiceProvider.getInboundAuthenticationConfig()).thenReturn(mockInboundAuthenticationConfig);
         when(mockServiceProvider.getClaimConfig()).thenReturn(mockClaimConfig);
         when(authenticatorDataHolder.getOrganizationManager().resolveTenantDomain(anyString()))
@@ -423,10 +423,7 @@ public class OrganizationAuthenticatorTest {
         when(organizationAuthenticator.getRuntimeParams(mockAuthenticationContext))
                 .thenReturn(authenticatorParamProperties);
 
-        when(mockOrganizationManager
-                .getOrganizationIdByName(anyString())).thenReturn(orgId);
-        when(mockOrganizationManager
-                .getOrganization(anyString(), anyBoolean(), anyBoolean())).thenReturn(mockOrganization);
+        mockOrganizationManager();
 
         when(mockOrganizationManager.resolveOrganizationId(anyString()))
                 .thenReturn(saasAppOwnedOrgId);
@@ -449,21 +446,15 @@ public class OrganizationAuthenticatorTest {
         when(organizationAuthenticator.getRuntimeParams(mockAuthenticationContext))
                 .thenReturn(authenticatorParamProperties);
 
-        when(authenticatorDataHolder.getOrganizationManager()
-                .getOrganizationIdByName(anyString())).thenReturn(orgId);
-        when(authenticatorDataHolder.getOrganizationManager()
-                .getOrganization(anyString(), anyBoolean(), anyBoolean())).thenReturn(mockOrganization);
-        when(authenticatorDataHolder.getOrgApplicationManager().resolveSharedApplication(anyString(),
-                anyString(), anyString())).thenReturn(mockServiceProvider);
+        mockOrganizationManager();
+        mockOrgApplicationManager();
 
         when(authenticatorDataHolder.getOrgApplicationManager().resolveSharedApplication(anyString(),
                 anyString(), anyString())).thenThrow(
                 new OrganizationManagementServerException(ERROR_CODE_INVALID_APPLICATION.getCode(),
                         ERROR_CODE_INVALID_APPLICATION.getMessage()));
-        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(anyString()))
-                .thenReturn(saasAppOwnedOrgId);
-        when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
-        when(mockAuthenticationContext.getServiceProviderName()).thenReturn(saasApp);
+
+        mockAuthenticationContext();
 
         organizationAuthenticator.initiateAuthenticationRequest(mockServletRequest, mockServletResponse,
                 mockAuthenticationContext);
@@ -478,20 +469,11 @@ public class OrganizationAuthenticatorTest {
         when(organizationAuthenticator.getRuntimeParams(mockAuthenticationContext))
                 .thenReturn(authenticatorParamProperties);
 
-        when(authenticatorDataHolder.getOrganizationManager()
-                .getOrganizationIdByName(anyString())).thenReturn(orgId);
-        when(authenticatorDataHolder.getOrganizationManager()
-                .getOrganization(anyString(), anyBoolean(), anyBoolean())).thenReturn(mockOrganization);
-        when(authenticatorDataHolder.getOrganizationManager().resolveTenantDomain(anyString())).thenReturn(
-                orgId);
+        mockOrganizationManager();
+        mockOrgApplicationManager();
+        mockAuthenticationContext();
 
-        when(authenticatorDataHolder.getOrgApplicationManager().resolveSharedApplication(anyString(),
-                anyString(), anyString())).thenReturn(mockServiceProvider);
-        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(anyString()))
-                .thenReturn(saasAppOwnedOrgId);
         when(mockServiceProvider.getInboundAuthenticationConfig()).thenReturn(mockInboundAuthenticationConfig);
-        when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
-        when(mockAuthenticationContext.getServiceProviderName()).thenReturn(saasApp);
 
         organizationAuthenticator.initiateAuthenticationRequest(mockServletRequest, mockServletResponse,
                 mockAuthenticationContext);
@@ -581,28 +563,19 @@ public class OrganizationAuthenticatorTest {
         setMockContextParamForValidOrganization();
 
         // Set authenticator parameters.
-        authenticatorParamProperties.put(ORG_PARAMETER, orgId);
+        authenticatorParamProperties.put(ORG_PARAMETER, org);
         authenticatorParamProperties.put(ORG_ID_PARAMETER, orgId);
         when(organizationAuthenticator.getRuntimeParams(mockAuthenticationContext))
                 .thenReturn(authenticatorParamProperties);
 
         // Mock organization manager.
-        when(authenticatorDataHolder.getOrganizationManager()
-                .getOrganizationIdByName(anyString())).thenReturn(orgId);
-        when(authenticatorDataHolder.getOrganizationManager()
-                .getOrganization(anyString(), anyBoolean(), anyBoolean())).thenReturn(mockOrganization);
-        when(authenticatorDataHolder.getOrganizationManager().resolveTenantDomain(anyString())).thenReturn(
-                orgId);
+        mockOrganizationManager();
 
         // Mock authentication context.
-        when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
-        when(mockAuthenticationContext.getServiceProviderName()).thenReturn(saasApp);
+        mockAuthenticationContext();
 
         // Mock application manager.
-        when(authenticatorDataHolder.getOrgApplicationManager().resolveSharedApplication(anyString(),
-                anyString(), anyString())).thenReturn(mockServiceProvider);
-        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(anyString()))
-                .thenReturn(saasAppOwnedOrgId);
+        mockOrgApplicationManager();
 
         // Mock service provider.
         when(mockServiceProvider.getInboundAuthenticationConfig()).thenReturn(mockInboundAuthenticationConfig);
@@ -667,6 +640,32 @@ public class OrganizationAuthenticatorTest {
             // Verify the SAML redirection HTML page is written to the response.
             verify(mockedPrintWriter).print(anyString());
         }
+    }
+
+    private void mockAuthenticationContext() {
+
+        when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
+        when(mockAuthenticationContext.getServiceProviderName()).thenReturn(saasApp);
+    }
+
+    private void mockOrgApplicationManager() throws OrganizationManagementException {
+
+        when(authenticatorDataHolder.getOrgApplicationManager().resolveSharedApplication(anyString(),
+                anyString(), anyString())).thenReturn(mockServiceProvider);
+    }
+
+    private void mockOrganizationManager() throws OrganizationManagementException {
+
+        when(authenticatorDataHolder.getOrganizationManager()
+                .getOrganizationIdByName(anyString())).thenReturn(orgId);
+        when(authenticatorDataHolder.getOrganizationManager()
+                .getOrganization(anyString(), anyBoolean(), anyBoolean())).thenReturn(mockOrganization);
+        when(authenticatorDataHolder.getOrganizationManager().resolveTenantDomain(anyString())).thenReturn(
+                orgId);
+        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(anyString()))
+                .thenReturn(saasAppOwnedOrgId);
+        when(authenticatorDataHolder.getOrganizationManager().getOrganizationNameById(anyString()))
+                .thenReturn(org);
     }
 
     private void setMockContextParamForValidOrganization() {

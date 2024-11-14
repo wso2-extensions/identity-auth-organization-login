@@ -78,7 +78,7 @@ public class AuthenticatorServiceComponent {
                 AuthenticatorDataHolder.getInstance().setSamlSsoResponseHtmlPage(
                         new String(Files.readAllBytes(redirectHtmlPath), StandardCharsets.UTF_8));
                 if (log.isDebugEnabled()) {
-                    log.debug(" SAML SSO response HTML page is found at : " + redirectHtmlPath);
+                    log.debug("SAML SSO response HTML page is found at : " + redirectHtmlPath);
                 }
             }
         } catch (Exception e) {
