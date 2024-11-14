@@ -357,8 +357,8 @@ public class OrganizationAuthenticatorTest {
         authenticatorParamProperties.put(ORG_PARAMETER, "");
         when(organizationAuthenticator.getRuntimeParams(mockAuthenticationContext))
                 .thenReturn(authenticatorParamProperties);
-        mockBasicAuthenticationContext(saasAppOwnedTenant, saasApp);
 
+        mockBasicAuthenticationContext(saasAppOwnedTenant, saasApp);
         setMockContextParamForValidOrganization();
         mockOrgApplicationManager();
 
@@ -401,8 +401,8 @@ public class OrganizationAuthenticatorTest {
         setupMockParam(ORG_ID_PARAMETER, orgId);
         setupInboundAuthenticationRequestConfigs();
         setMockContextParamForValidOrganization();
-
         mockBasicAuthenticationContext(saasAppOwnedTenant, saasApp);
+
         when(mockAuthenticationContext.getAuthenticatorProperties()).thenReturn(authenticatorProperties);
 
         when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(anyString()))
