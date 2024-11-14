@@ -350,11 +350,10 @@ public class OrganizationAuthenticatorTest {
 
     @Test
     public void testProcessWithValidOrgIdParamSet() throws Exception {
-      
+
         setupMockParam(ORG_ID_PARAMETER, orgId);
         setupInboundAuthenticationRequestConfigs();
         mockOrganizationManager();
-
 
         authenticatorParamProperties.put(ORG_PARAMETER, "");
         when(organizationAuthenticator.getRuntimeParams(mockAuthenticationContext))
