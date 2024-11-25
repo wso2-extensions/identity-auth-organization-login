@@ -165,7 +165,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             "<h2>Please wait while we take you back to $app</h2>\n" +
             "<p><a href=\"javascript:document.getElementById('samlsso-response-form').submit()\">Click here</a>" +
             " if you have been waiting for too long.</p>\n" +
-            "<form id=\"samlsso-response-form\" method=\"post\" action=\"$loginPage\">\n" +
+            "<form id=\"samlsso-response-form\" method=\"post\" action=\"$acUrl\">\n" +
             "    <!--$params-->\n" +
             "    <!--$additionalParams-->\n" +
             "</form>\n" +
@@ -209,7 +209,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                             .inputParam(LogConstants.InputKeys.IDP, context.getExternalIdP().getIdPName())
                             .inputParams(getApplicationDetails(context));
                 }
-                String loginPage = super.prepareLoginPage(request, context);
+                String loginPage = prepareLoginPage(request, context);
                 try {
                     generateSamlPostPage(response, loginPage,
                             request.getParameter(AuthenticatorConstants.SAML_RESP), context);
@@ -237,7 +237,14 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private void generateSamlPostPage(HttpServletResponse resp, String loginPage, String samlMessage,
                                       AuthenticationContext context) throws IOException {
 
-        String pageWithLoginPage = samlSSOResponseFormPostPageTemplate.replace("$loginPage", loginPage);
+        String samlSSORedirectPage;
+        if (AuthenticatorDataHolder.getInstance().isSamlSsoResponseHtmlPageAvailable()) {
+            samlSSORedirectPage = AuthenticatorDataHolder.getInstance().getSamlSsoResponseHtmlPage();
+        } else {
+            samlSSORedirectPage = samlSSOResponseFormPostPageTemplate;
+        }
+
+        String pageWithLoginPage = samlSSORedirectPage.replace("$acUrl", loginPage);
         String pageWithApp = pageWithLoginPage.replace("$app", loginPage);
 
         String spName = getApplicationDetails(context).get("application name");
@@ -1025,5 +1032,12 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
          */
         Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
         return authenticatorProperties.get(CALLBACK_URL);
+    }
+
+    @Override
+    protected String prepareLoginPage(HttpServletRequest request, AuthenticationContext context)
+            throws AuthenticationFailedException {
+
+        return super.prepareLoginPage(request, context);
     }
 }

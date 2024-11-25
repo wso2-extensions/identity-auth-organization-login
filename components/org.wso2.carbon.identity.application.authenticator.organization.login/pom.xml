@@ -244,6 +244,12 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>org/wso2/carbon/identity/application/authenticator/organization/login/internal/AuthenticatorServiceComponent.class</exclude>
+                        <exclude>org/wso2/carbon/identity/application/authenticator/organization/login/internal/AuthenticatorDataHolder.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>default-instrument</id>

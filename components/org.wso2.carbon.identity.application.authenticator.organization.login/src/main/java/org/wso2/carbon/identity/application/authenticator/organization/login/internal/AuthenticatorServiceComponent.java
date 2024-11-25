@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2024, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.organization.login.internal;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.ComponentContext;
@@ -37,6 +38,12 @@ import org.wso2.carbon.identity.organization.discovery.service.OrganizationDisco
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.user.core.service.RealmService;
+import org.wso2.carbon.utils.CarbonUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * This class contains the service component of the organization login authenticator.
@@ -49,6 +56,10 @@ public class AuthenticatorServiceComponent {
 
     private static final Log log = LogFactory.getLog(AuthenticatorServiceComponent.class);
 
+    @SuppressFBWarnings(
+            value = "PATH_TRAVERSAL_IN",
+            justification = "Passed file location is provided from the server side and not from user input."
+    )
     @Activate
     protected void activate(ComponentContext ctxt) {
 
@@ -58,6 +69,17 @@ public class AuthenticatorServiceComponent {
                     .registerService(ApplicationAuthenticator.class.getName(), organizationAuthenticator, null);
             if (log.isDebugEnabled()) {
                 log.debug("Organization Authenticator bundle is activated");
+            }
+
+            Path redirectHtmlPath = Paths.get(CarbonUtils.getCarbonHome(), "repository", "resources",
+                    "identity", "pages", "samlsso_response.html");
+            if (Files.exists(redirectHtmlPath)) {
+                AuthenticatorDataHolder.getInstance().setUseSamlSsoResponseHtmlPage(true);
+                AuthenticatorDataHolder.getInstance().setSamlSsoResponseHtmlPage(
+                        new String(Files.readAllBytes(redirectHtmlPath), StandardCharsets.UTF_8));
+                if (log.isDebugEnabled()) {
+                    log.debug("SAML SSO response HTML page is found at : " + redirectHtmlPath);
+                }
             }
         } catch (Exception e) {
             log.error(" Error while activating Organization Authenticator ", e);
