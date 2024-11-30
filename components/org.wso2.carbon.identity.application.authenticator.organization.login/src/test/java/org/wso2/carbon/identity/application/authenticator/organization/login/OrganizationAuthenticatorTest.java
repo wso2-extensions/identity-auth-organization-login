@@ -91,10 +91,13 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.LOGIN_HINT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.OIDC_CLAIM_DIALECT_URL;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_DISCOVERY_TYPE;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_TYPE_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SAML_RESP;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SELF_REGISTRATION_PARAMETER;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_APPLICATION_NOT_SHARED;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_INVALID_APPLICATION;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_INVALID_ORGANIZATION_ID;
@@ -382,6 +385,61 @@ public class OrganizationAuthenticatorTest {
         AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
                 mockAuthenticationContext);
 
+        Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
+    }
+
+    @Test
+    public void testProcessWithSelfRegParam() throws Exception {
+
+        when(mockServletRequest.getParameter(SELF_REGISTRATION_PARAMETER)).thenReturn("true");
+        when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
+        when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
+        when(mockAuthenticationContext.getServiceProviderResourceId()).thenReturn(saasAppResourceId);
+        when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
+                .thenReturn(mockDiscoveryConfig);
+        when(mockAuthenticationContext.getProperty(SELF_REGISTRATION_PARAMETER)).thenReturn("true");
+        AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
+                mockAuthenticationContext);
+        Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
+    }
+
+    @Test
+    public void testProcessWithSelfRegContext() throws Exception {
+
+        setMockContextParamForValidOrganization();
+        when(mockAuthenticationContext.getAuthenticatorProperties()).thenReturn(authenticatorProperties);
+        when(mockAuthenticationContext.getServiceProviderName()).thenReturn(saasApp);
+        when(mockAuthenticationContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
+        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(anyString()))
+                .thenReturn(saasAppOwnedOrgId);
+        when(authenticatorDataHolder.getOrganizationManager().resolveTenantDomain(anyString())).thenReturn(
+                orgId);
+        when(authenticatorDataHolder.getOrgApplicationManager()
+                .resolveSharedApplication(anyString(), anyString(), anyString())).thenReturn(mockServiceProvider);
+
+        List<Claim> claims = new ArrayList<>();
+        claims.add(new Claim(OIDC_CLAIM_DIALECT_URL, "custom", null));
+        when(authenticatorDataHolder.getClaimMetadataManagementService().getMappedExternalClaimsForLocalClaim(
+                anyString(), anyString())).thenReturn(claims);
+        when(mockServiceProvider.getInboundAuthenticationConfig()).thenReturn(mockInboundAuthenticationConfig);
+        when(mockServiceProvider.getClaimConfig()).thenReturn(mockClaimConfig);
+
+        InboundAuthenticationRequestConfig inbound = new InboundAuthenticationRequestConfig();
+        inbound.setInboundAuthType(INBOUND_AUTH_TYPE_OAUTH);
+        inbound.setInboundAuthKey(clientId);
+        InboundAuthenticationRequestConfig[] inbounds = {inbound};
+        when(mockInboundAuthenticationConfig.getInboundAuthenticationRequestConfigs()).thenReturn(inbounds);
+
+        when(authenticatorDataHolder.getOAuthAdminService().getOAuthApplicationData(anyString(), anyString()))
+                .thenReturn(mockOAuthConsumerAppDTO);
+        when(mockOAuthConsumerAppDTO.getOauthConsumerSecret()).thenReturn(secretKey);
+
+        when(mockAuthenticationContext.getProperty(SELF_REGISTRATION_PARAMETER)).thenReturn("true");
+        when(mockAuthenticationContext.getProperty(ORG_DISCOVERY_PARAMETER)).thenReturn(userEmailWithValidDomain);
+        when(mockAuthenticationContext.getProperty(ORGANIZATION_DISCOVERY_TYPE)).thenReturn(emailDomainDiscoveryType);
+        AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
+                mockAuthenticationContext);
         Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
     }
 
