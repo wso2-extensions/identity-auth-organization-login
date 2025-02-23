@@ -420,14 +420,14 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             String organizationId = (String) request.getAttribute(ORG_ID_PARAMETER);
             context.setProperty(ORG_ID_PARAMETER, organizationId);
             String organizationName = getOrganizationNameById(organizationId);
-            if (organizationName != null) {
+            if (StringUtils.isNotBlank(organizationName)) {
                 context.setProperty(ORG_PARAMETER, organizationName);
             }
         } else if (request.getParameterMap().containsKey(ORG_ID_PARAMETER)) {
             String organizationId = request.getParameter(ORG_ID_PARAMETER);
             context.setProperty(ORG_ID_PARAMETER, organizationId);
             String organizationName = getOrganizationNameById(organizationId);
-            if (organizationName != null) {
+            if (StringUtils.isNotBlank(organizationName)) {
                 context.setProperty(ORG_PARAMETER, organizationName);
             }
         } else if (request.getParameterMap().containsKey(LOGIN_HINT_PARAMETER)) {
