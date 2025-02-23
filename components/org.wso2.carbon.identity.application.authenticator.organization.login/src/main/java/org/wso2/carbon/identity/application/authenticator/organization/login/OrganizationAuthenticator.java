@@ -512,7 +512,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         try {
             return getOrganizationManager().getOrganizationNameById(organizationId);
         } catch (OrganizationManagementException e) {
-            log.error(e.getMessage());
+            log.debug(e.getMessage());
             return null;
         }
     }
