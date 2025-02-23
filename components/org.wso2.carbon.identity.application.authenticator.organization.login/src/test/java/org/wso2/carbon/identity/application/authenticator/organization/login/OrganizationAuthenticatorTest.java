@@ -311,13 +311,21 @@ public class OrganizationAuthenticatorTest {
         Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
     }
 
-    @Test(expectedExceptions = {AuthenticationFailedException.class})
+    @Test
     public void testProcessInvalidOrgIdParam() throws Exception {
 
         setupMockParam(ORG_ID_PARAMETER, orgId);
         when(authenticatorDataHolder.getOrganizationManager().getOrganizationNameById(anyString()))
                 .thenThrow(handleClientException(ERROR_CODE_INVALID_ORGANIZATION_ID));
-        organizationAuthenticator.process(mockServletRequest, mockServletResponse, mockAuthenticationContext);
+        when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
+        when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        when(mockAuthenticationContext.getServiceProviderResourceId()).thenReturn(saasAppResourceId);
+        when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
+        when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
+                .thenReturn(mockDiscoveryConfig);
+        AuthenticatorFlowStatus status =
+                organizationAuthenticator.process(mockServletRequest, mockServletResponse, mockAuthenticationContext);
+        Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
     }
 
     @Test

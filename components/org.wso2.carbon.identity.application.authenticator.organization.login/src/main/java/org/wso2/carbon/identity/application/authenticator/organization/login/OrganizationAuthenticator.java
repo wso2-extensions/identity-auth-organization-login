@@ -145,11 +145,9 @@ import static org.wso2.carbon.identity.organization.management.service.constant.
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_TENANT_DOMAIN_FROM_ORGANIZATION_DOMAIN;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_APPLICATION;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME;
-import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_ORGANIZATION_NAME_BY_ID;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_VALIDATING_ORGANIZATION_DISCOVERY_ATTRIBUTE;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_VALIDATING_ORGANIZATION_LOGIN_HINT_ATTRIBUTE;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_INVALID_APPLICATION;
-import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_INVALID_ORGANIZATION_ID;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ORGANIZATION_NOT_FOUND_FOR_TENANT;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ORG_PARAMETERS_NOT_RESOLVED;
 
@@ -422,12 +420,16 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             String organizationId = (String) request.getAttribute(ORG_ID_PARAMETER);
             context.setProperty(ORG_ID_PARAMETER, organizationId);
             String organizationName = getOrganizationNameById(organizationId);
-            context.setProperty(ORG_PARAMETER, organizationName);
+            if (StringUtils.isNotBlank(organizationName)) {
+                context.setProperty(ORG_PARAMETER, organizationName);
+            }
         } else if (request.getParameterMap().containsKey(ORG_ID_PARAMETER)) {
             String organizationId = request.getParameter(ORG_ID_PARAMETER);
             context.setProperty(ORG_ID_PARAMETER, organizationId);
             String organizationName = getOrganizationNameById(organizationId);
-            context.setProperty(ORG_PARAMETER, organizationName);
+            if (StringUtils.isNotBlank(organizationName)) {
+                context.setProperty(ORG_PARAMETER, organizationName);
+            }
         } else if (request.getParameterMap().containsKey(LOGIN_HINT_PARAMETER)) {
             String loginHint = request.getParameter(LOGIN_HINT_PARAMETER);
             context.setProperty(ORG_DISCOVERY_PARAMETER, loginHint);
@@ -505,14 +507,13 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         return StringUtils.EMPTY;
     }
 
-    private String getOrganizationNameById(String organizationId) throws AuthenticationFailedException {
+    private String getOrganizationNameById(String organizationId) {
 
         try {
             return getOrganizationManager().getOrganizationNameById(organizationId);
-        } catch (OrganizationManagementClientException e) {
-            throw handleAuthFailures(ERROR_CODE_INVALID_ORGANIZATION_ID);
         } catch (OrganizationManagementException e) {
-            throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_ORGANIZATION_NAME_BY_ID, e);
+            log.debug(e.getMessage());
+            return null;
         }
     }
 
