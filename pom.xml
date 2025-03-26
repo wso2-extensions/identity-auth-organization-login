@@ -344,7 +344,7 @@
 
     <properties>
 
-        <carbon.identity.org.mgt.version>1.4.125</carbon.identity.org.mgt.version>
+        <carbon.identity.org.mgt.version>1.4.129</carbon.identity.org.mgt.version>
         <org.wso2.identity.organization.mgt.imp.pkg.version.range>[1.0.0,2.0.0)
         </org.wso2.identity.organization.mgt.imp.pkg.version.range>
 
