@@ -578,7 +578,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         try {
             String appResideOrgId = getOrgIdByTenantDomain(context.getLoginTenantDomain());
             String organizationId = getOrganizationDiscoveryManager().getOrganizationIdByDiscoveryAttribute
-                    (discoveryType, loginHintInput, appResideOrgId);
+                    (discoveryType, loginHintInput, appResideOrgId, context);
             if (StringUtils.isNotBlank(organizationId)) {
                 context.setProperty(ORG_ID_PARAMETER, organizationId);
                 return true;
@@ -599,7 +599,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         try {
             if (discoveryType != null) {
                 String organizationId = getOrganizationDiscoveryManager().getOrganizationIdByDiscoveryAttribute
-                        (discoveryType.toString(), discoveryInput, appResideOrgId);
+                        (discoveryType.toString(), discoveryInput, appResideOrgId, context);
                 if (StringUtils.isNotBlank(organizationId)) {
                     context.setProperty(ORG_ID_PARAMETER, organizationId);
                     return true;
