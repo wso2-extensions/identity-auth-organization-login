@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2025, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -81,11 +81,14 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
@@ -172,6 +175,9 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             "</body>\n" +
             "</html>";
     private static final String EMAIL_DOMAIN_DISCOVERY_TYPE = "emailDomain";
+    private static final String SSO_ADDITIONAL_PARAMS = "ssoAdditionalParams";
+    private static final String DYNAMIC_PARAMETER_LOOKUP_REGEX = "\\$\\{(\\w+)\\}";
+    private static final String DYNAMIC_AUTH_PARAMS_LOOKUP_REGEX = "\\$authparam\\{(\\w+)\\}";
 
     @Override
     public String getFriendlyName() {
@@ -737,7 +743,65 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             }
         }
 
+        String additionalQueryParams = resolveAdditionalQueryParams(context);
+        if (StringUtils.isNotBlank(additionalQueryParams)) {
+            paramBuilder.append(AMPERSAND_SIGN).append(additionalQueryParams);
+        }
+
         return paramBuilder.toString();
+    }
+
+    private String resolveAdditionalQueryParams(AuthenticationContext context) {
+
+        Map<String, String> runtimeParams =  getRuntimeParams(context);
+        String additionalQueryParams = runtimeParams.get(SSO_ADDITIONAL_PARAMS);
+        if (StringUtils.isBlank(additionalQueryParams)) {
+            return StringUtils.EMPTY;
+        }
+        additionalQueryParams = handleAuthParams(runtimeParams, additionalQueryParams);
+        additionalQueryParams = handleRequestParams(context, additionalQueryParams);
+        return additionalQueryParams;
+    }
+
+    private String handleAuthParams(Map<String, String> runtimeParams, String queryString) {
+
+        Matcher matcher = Pattern.compile(DYNAMIC_AUTH_PARAMS_LOOKUP_REGEX)
+                .matcher(queryString);
+        while (matcher.find()) {
+            String value = StringUtils.EMPTY;
+            String paramName = matcher.group(1);
+            if (StringUtils.isNotEmpty(runtimeParams.get(paramName))) {
+                value = runtimeParams.get(paramName);
+            }
+            queryString = queryString.replaceAll("\\$authparam\\{" + paramName + "}", Matcher.quoteReplacement(value));
+        }
+        return queryString;
+    }
+
+    private String handleRequestParams(AuthenticationContext context, String queryString) {
+
+        String requestParamsString = context.getQueryParams();
+        Map<String, String> requestParams = new HashMap<>();
+        if (StringUtils.isNotBlank(requestParamsString)) {
+            String[] params = requestParamsString.split(AMPERSAND_SIGN);
+            for (String param : params) {
+                String[] keyValue = param.split(EQUAL_SIGN);
+                if (keyValue.length == 2) {
+                    requestParams.put(keyValue[0], keyValue[1]);
+                }
+            }
+        }
+        Matcher matcher = Pattern.compile(DYNAMIC_PARAMETER_LOOKUP_REGEX)
+                .matcher(queryString);
+        while (matcher.find()) {
+            String paramName = matcher.group(1);
+            String value = StringUtils.EMPTY;
+            if (requestParams.containsKey(paramName)) {
+                value = requestParams.get(paramName);
+            }
+            queryString = queryString.replaceAll("\\$\\{" + paramName + "}", Matcher.quoteReplacement(value));
+        }
+        return queryString;
     }
 
     /**
