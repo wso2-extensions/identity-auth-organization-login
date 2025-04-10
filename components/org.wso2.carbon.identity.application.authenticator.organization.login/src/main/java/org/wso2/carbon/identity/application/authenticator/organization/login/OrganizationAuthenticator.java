@@ -984,7 +984,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private String getUserInfoEndpoint(String organizationId, String tenantDomain) throws URLBuilderException {
 
         return ServiceURLBuilder.create().addPath(USERINFO_ENDPOINT_ORGANIZATION_PATH).setTenant(tenantDomain)
-                .setOrganization(organizationId).build().getAbsolutePublicURL();
+                .setOrganization(organizationId).build().getAbsoluteInternalURL();
     }
 
     /**
@@ -997,7 +997,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private String getTokenEndpoint(String organizationId, String tenantDomain) throws URLBuilderException {
 
         return ServiceURLBuilder.create().addPath(TOKEN_ENDPOINT_ORGANIZATION_PATH).setTenant(tenantDomain)
-                .setOrganization(organizationId).build().getAbsolutePublicURL();
+                .setOrganization(organizationId).build().getAbsoluteInternalURL();
     }
 
     /**
