@@ -417,6 +417,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             context.setProperty(SELF_REGISTRATION_PARAMETER, request.getParameter(SELF_REGISTRATION_PARAMETER));
         }
 
+        Map<String, String> runtimeParams = getRuntimeParams(context);
+
         /**
          * First priority for organization Id.
          * Check for the organization Id in the request attribute first since the organization Id is set in the
@@ -429,29 +431,29 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             if (StringUtils.isNotBlank(organizationName)) {
                 context.setProperty(ORG_PARAMETER, organizationName);
             }
-        } else if (request.getParameterMap().containsKey(ORG_ID_PARAMETER)) {
-            String organizationId = request.getParameter(ORG_ID_PARAMETER);
+        } else if (isParameterExists(request, runtimeParams, ORG_ID_PARAMETER)) {
+            String organizationId = getParameter(request, runtimeParams, ORG_ID_PARAMETER);
             context.setProperty(ORG_ID_PARAMETER, organizationId);
             String organizationName = getOrganizationNameById(organizationId);
             if (StringUtils.isNotBlank(organizationName)) {
                 context.setProperty(ORG_PARAMETER, organizationName);
             }
-        } else if (request.getParameterMap().containsKey(LOGIN_HINT_PARAMETER)) {
-            String loginHint = request.getParameter(LOGIN_HINT_PARAMETER);
+        } else if (isParameterExists(request, runtimeParams, LOGIN_HINT_PARAMETER)) {
+            String loginHint = getParameter(request, runtimeParams, LOGIN_HINT_PARAMETER);
             context.setProperty(ORG_DISCOVERY_PARAMETER, loginHint);
-            if (!validateLoginHintAttributeValue(loginHint, context, request, response)) {
+            if (!validateLoginHintAttributeValue(loginHint, runtimeParams, context, request, response)) {
                 context.removeProperty(ORG_DISCOVERY_PARAMETER);
                 return AuthenticatorFlowStatus.INCOMPLETE;
             }
-        } else if (request.getParameterMap().containsKey(ORG_DISCOVERY_PARAMETER)) {
-            String discoveryInput = request.getParameter(ORG_DISCOVERY_PARAMETER);
+        } else if (isParameterExists(request, runtimeParams, ORG_DISCOVERY_PARAMETER)) {
+            String discoveryInput = getParameter(request, runtimeParams, ORG_DISCOVERY_PARAMETER);
             context.setProperty(ORG_DISCOVERY_PARAMETER, discoveryInput);
             if (!validateDiscoveryAttributeValue(discoveryInput, context, response)) {
                 context.removeProperty(ORG_DISCOVERY_PARAMETER);
                 return AuthenticatorFlowStatus.INCOMPLETE;
             }
-        } else if (request.getParameterMap().containsKey(ORG_PARAMETER)) {
-            String organizationName = request.getParameter(ORG_PARAMETER);
+        } else if (isParameterExists(request, runtimeParams, ORG_PARAMETER)) {
+            String organizationName = getParameter(request, runtimeParams, ORG_PARAMETER);
             context.setProperty(ORG_PARAMETER, organizationName);
             if (!validateOrganizationName(organizationName, context, response)) {
                 context.removeProperty(ORG_PARAMETER);
@@ -564,14 +566,15 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
      * @return True if the login_hint parameter is valid.
      * @throws AuthenticationFailedException If an error occurs while validating login_hint parameter.
      */
-    private boolean validateLoginHintAttributeValue(String loginHintInput, AuthenticationContext context,
-                                                    HttpServletRequest request, HttpServletResponse response)
+    private boolean validateLoginHintAttributeValue(String loginHintInput, Map<String, String> runtimeParams,
+                                                    AuthenticationContext context, HttpServletRequest request,
+                                                    HttpServletResponse response)
             throws AuthenticationFailedException {
 
         // Default discovery type is set to `emailDomain`.
         String discoveryType = EMAIL_DOMAIN_DISCOVERY_TYPE;
-        if (request.getParameterMap().containsKey(ORG_DISCOVERY_TYPE_PARAMETER)) {
-            discoveryType = request.getParameter(ORG_DISCOVERY_TYPE_PARAMETER);
+        if (isParameterExists(request, runtimeParams, ORG_DISCOVERY_TYPE_PARAMETER)) {
+            discoveryType = getParameter(request, runtimeParams, ORG_DISCOVERY_TYPE_PARAMETER);
         }
 
         if (!isOrganizationDiscoveryTypeEnabled(discoveryType)) {
@@ -1128,5 +1131,36 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             throws AuthenticationFailedException {
 
         return super.prepareLoginPage(request, context);
+    }
+
+    /**
+     * Checks whether the given parameter is available in request parameters or in runtime parameters.
+     *
+     * @param request       Servlet request.
+     * @param runtimeParams Runtime parameters given via adaptive script.
+     * @param parameter     Parameter to be checked.
+     * @return True if parameter exists in request parameters or runtime parameters.
+     */
+    private boolean isParameterExists(HttpServletRequest request, Map<String, String> runtimeParams, String parameter) {
+
+        return request.getParameterMap().containsKey(parameter) || runtimeParams.containsKey(parameter);
+    }
+
+    /**
+     * Retrieve the given parameter from request parameters or runtime parameters.
+     *
+     * @param request       Servlet request.
+     * @param runtimeParams Runtime parameters given via adaptive script.
+     * @param parameter     Parameter to be retrieved.
+     * @return Parameter value retrieved from request parameters or runtime parameters.
+     */
+    private String getParameter(HttpServletRequest request, Map<String, String> runtimeParams, String parameter) {
+
+        if (request.getParameterMap().containsKey(parameter)) {
+            return request.getParameter(parameter);
+        } else if (runtimeParams.containsKey(parameter)) {
+            return runtimeParams.get(parameter);
+        }
+        return StringUtils.EMPTY;
     }
 }
