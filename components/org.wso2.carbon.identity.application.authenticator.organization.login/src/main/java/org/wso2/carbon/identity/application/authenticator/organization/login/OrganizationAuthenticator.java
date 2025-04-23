@@ -445,8 +445,9 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                 context.removeProperty(ORG_DISCOVERY_PARAMETER);
                 return AuthenticatorFlowStatus.INCOMPLETE;
             }
-        } else if (isParameterExists(request, runtimeParams, ORG_DISCOVERY_PARAMETER)) {
-            String discoveryInput = getParameter(request, runtimeParams, ORG_DISCOVERY_PARAMETER);
+        } else if (request.getParameterMap().containsKey(ORG_DISCOVERY_PARAMETER)) {
+            // `orgDiscovery` request parameter is deprecated. `login_hint` should be used instead.
+            String discoveryInput = request.getParameter(ORG_DISCOVERY_PARAMETER);
             context.setProperty(ORG_DISCOVERY_PARAMETER, discoveryInput);
             if (!validateDiscoveryAttributeValue(discoveryInput, context, response)) {
                 context.removeProperty(ORG_DISCOVERY_PARAMETER);
