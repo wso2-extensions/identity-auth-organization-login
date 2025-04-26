@@ -19,6 +19,7 @@
 package org.wso2.carbon.identity.application.authenticator.organization.login;
 
 import org.apache.commons.lang.StringUtils;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -68,6 +69,7 @@ import java.io.PrintWriter;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +82,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -448,6 +451,152 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getProperty(ORGANIZATION_DISCOVERY_TYPE)).thenReturn(emailDomainDiscoveryType);
         AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
                 mockAuthenticationContext);
+        Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
+    }
+
+    @DataProvider(name = "testGetValidAuthenticatorParamsData")
+    public Object[][] testGetValidAuthenticatorParamsData() {
+
+        return new Object[][]{
+                {ORG_ID_PARAMETER, orgId},
+                {ORG_PARAMETER, org},
+                {LOGIN_HINT_PARAMETER, userEmailWithValidDomain}
+        };
+    }
+
+    @Test(dataProvider = "testGetValidAuthenticatorParamsData")
+    public void testProcessWithValidAuthenticatorParam(String paramKey, String paramValue) throws Exception {
+
+        AuthenticationContext spyContext = Mockito.spy(new AuthenticationContext());
+        authenticatorParamProperties.put(paramKey, paramValue);
+        when(organizationAuthenticator.getRuntimeParams(spyContext)).thenReturn(authenticatorParamProperties);
+
+        setupInboundAuthenticationRequestConfigs();
+        when(mockServiceProvider.getApplicationResourceId()).thenReturn(saasAppResourceId);
+        when(mockServiceProvider.getClaimConfig()).thenReturn(mockClaimConfig);
+        when(mockApplicationManagementService.getServiceProvider(anyString(), anyString()))
+                .thenReturn(mockServiceProvider);
+
+        when(mockOrganization.getId()).thenReturn(orgId);
+        when(mockOrganization.getName()).thenReturn(org);
+        when(mockBasicOrganization.getId()).thenReturn(orgId);
+        when(mockOrganizationManager.getOrganizationsByName(anyString()))
+                .thenReturn(Collections.singletonList(mockOrganization));
+
+        when(spyContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
+        when(spyContext.getServiceProviderName()).thenReturn(saasApp);
+        when(spyContext.getAuthenticatorProperties()).thenReturn(authenticatorProperties);
+        doReturn(saasAppOwnedTenant).when(spyContext).getLoginTenantDomain();
+
+        when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
+                .thenReturn(mockDiscoveryConfig);
+        List<ConfigProperty> configProperties = new ArrayList<>();
+        configProperties.add(new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG,
+                String.valueOf(true)));
+        when(mockDiscoveryConfig.getConfigProperties()).thenReturn(configProperties);
+
+        Map<String, AttributeBasedOrganizationDiscoveryHandler> discoveryHandlers = new HashMap<>();
+        AttributeBasedOrganizationDiscoveryHandler discoveryHandler =
+                mock(AttributeBasedOrganizationDiscoveryHandler.class);
+        discoveryHandlers.put(emailDomainDiscoveryType, discoveryHandler);
+        when(authenticatorDataHolder.getOrganizationDiscoveryManager().getAttributeBasedOrganizationDiscoveryHandlers())
+                .thenReturn(discoveryHandlers);
+
+        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(saasAppOwnedTenant)).thenReturn(
+                saasAppOwnedOrgId);
+        when(authenticatorDataHolder.getOrganizationManager().getOrganizationNameById(anyString()))
+                .thenReturn(org);
+        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(anyString()))
+                .thenReturn(saasAppOwnedOrgId);
+        when(authenticatorDataHolder.getOrganizationManager().resolveTenantDomain(anyString()))
+                .thenReturn(orgId);
+
+        when(authenticatorDataHolder.getOrganizationDiscoveryManager()
+                .getOrganizationIdByDiscoveryAttribute(emailDomainDiscoveryType, userEmailWithValidDomain,
+                        saasAppOwnedOrgId, spyContext)).thenReturn(orgId);
+
+        when(mockOrgApplicationManager.getApplicationSharedOrganizations(anyString(), anyString())).
+                thenReturn(Collections.singletonList(mockBasicOrganization));
+        when(authenticatorDataHolder.getOrgApplicationManager()
+                .resolveSharedApplication(anyString(), anyString(), anyString())).thenReturn(mockServiceProvider);
+
+        when(authenticatorDataHolder.getOAuthAdminService().getOAuthApplicationData(anyString(), anyString()))
+                .thenReturn(mockOAuthConsumerAppDTO);
+
+        AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
+                spyContext);
+
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        // Capture the redirect URL and verify the redirection to /authorize request.
+        verify(mockServletResponse, times(1)).sendRedirect(urlCaptor.capture());
+        String url = urlCaptor.getValue();
+        Assert.assertTrue(url.contains("/oauth2/authorize"));
+        // Verify the authentication flow status.
+        Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
+    }
+
+    @DataProvider(name = "testGetInvalidAuthenticatorParamsData")
+    public Object[][] testGetInvalidAuthenticatorParamsData() {
+
+        return new Object[][]{
+                {ORG_ID_PARAMETER, orgId, "/org_discovery.do"},
+                {ORG_PARAMETER, org, "/org_name.do"},
+                {LOGIN_HINT_PARAMETER, userEmailWithInvalidDomain, "/org_discovery.do"}
+        };
+    }
+
+    @Test(dataProvider = "testGetInvalidAuthenticatorParamsData")
+    public void testProcessWithInvalidAuthenticatorParam(String paramKey, String paramValue, String redirectPage)
+            throws Exception {
+
+        AuthenticationContext spyContext = Mockito.spy(new AuthenticationContext());
+        authenticatorParamProperties.put(paramKey, paramValue);
+        when(organizationAuthenticator.getRuntimeParams(spyContext)).thenReturn(authenticatorParamProperties);
+
+        setupInboundAuthenticationRequestConfigs();
+        when(mockApplicationManagementService.getServiceProvider(anyString(), anyString()))
+                .thenReturn(mockServiceProvider);
+
+        when(spyContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
+        when(spyContext.getServiceProviderName()).thenReturn(saasApp);
+        doReturn(saasAppOwnedTenant).when(spyContext).getLoginTenantDomain();
+        when(spyContext.getContextIdentifier()).thenReturn(contextIdentifier);
+        when(spyContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
+        when(spyContext.getServiceProviderResourceId()).thenReturn(saasAppResourceId);
+
+        when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
+                .thenReturn(mockDiscoveryConfig);
+        List<ConfigProperty> configProperties = new ArrayList<>();
+        configProperties.add(new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG,
+                String.valueOf(true)));
+        when(mockDiscoveryConfig.getConfigProperties()).thenReturn(configProperties);
+
+        Map<String, AttributeBasedOrganizationDiscoveryHandler> discoveryHandlers = new HashMap<>();
+        AttributeBasedOrganizationDiscoveryHandler discoveryHandler =
+                mock(AttributeBasedOrganizationDiscoveryHandler.class);
+        discoveryHandlers.put(emailDomainDiscoveryType, discoveryHandler);
+        when(authenticatorDataHolder.getOrganizationDiscoveryManager().getAttributeBasedOrganizationDiscoveryHandlers())
+                .thenReturn(discoveryHandlers);
+
+        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(saasAppOwnedTenant)).thenReturn(
+                saasAppOwnedOrgId);
+        when(authenticatorDataHolder.getOrganizationManager().getOrganizationNameById(anyString()))
+                .thenThrow(handleClientException(ERROR_CODE_INVALID_ORGANIZATION_ID));
+
+        when(authenticatorDataHolder.getOrganizationDiscoveryManager()
+                .getOrganizationIdByDiscoveryAttribute(emailDomainDiscoveryType, userEmailWithInvalidDomain,
+                        saasAppOwnedOrgId, spyContext)).thenReturn(null);
+
+        AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
+                spyContext);
+
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        // Capture the redirect URL and verify the redirection to org discovery pages.
+        verify(mockServletResponse, times(1)).sendRedirect(urlCaptor.capture());
+        String url = urlCaptor.getValue();
+        Assert.assertTrue(url.contains(redirectPage));
+        // Verify the authentication flow status.
         Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
     }
 
