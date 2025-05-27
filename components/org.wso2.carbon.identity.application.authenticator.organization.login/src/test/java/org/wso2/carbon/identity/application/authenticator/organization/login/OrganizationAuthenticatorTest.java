@@ -36,12 +36,14 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authenticator.organization.login.internal.AuthenticatorDataHolder;
 import org.wso2.carbon.identity.application.common.model.ClaimConfig;
+import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.InboundAuthenticationConfig;
 import org.wso2.carbon.identity.application.common.model.InboundAuthenticationRequestConfig;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
+import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
 import org.wso2.carbon.identity.claim.metadata.mgt.model.Claim;
 import org.wso2.carbon.identity.common.testng.WithAxisConfiguration;
 import org.wso2.carbon.identity.core.ServiceURL;
@@ -66,6 +68,10 @@ import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.user.core.tenant.TenantManager;
 
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URLEncoder;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,6 +88,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -250,7 +257,7 @@ public class OrganizationAuthenticatorTest {
 
     private void mockIdentityTenantUtils() {
 
-        mockedUtilities = Mockito.mockStatic(IdentityTenantUtil.class, Mockito.withSettings()
+        mockedUtilities = mockStatic(IdentityTenantUtil.class, Mockito.withSettings()
                 .defaultAnswer(Mockito.CALLS_REAL_METHODS));
         mockedUtilities.when(() -> IdentityTenantUtil.getTenantId(anyString())).thenReturn(-1234);
     }
@@ -820,8 +827,8 @@ public class OrganizationAuthenticatorTest {
         when(mockOAuthConsumerAppDTO.getOauthConsumerSecret()).thenReturn(secretKey);
         when(mockOAuthConsumerAppDTO.getCallbackUrl()).thenReturn("https://localhost:9443/commonauth");
 
-        try (MockedStatic<ServiceURLBuilder> serviceURLBuilder = Mockito.mockStatic(ServiceURLBuilder.class);
-             MockedStatic<LoggerUtils> loggerUtils = Mockito.mockStatic(LoggerUtils.class)) {
+        try (MockedStatic<ServiceURLBuilder> serviceURLBuilder = mockStatic(ServiceURLBuilder.class);
+             MockedStatic<LoggerUtils> loggerUtils = mockStatic(LoggerUtils.class)) {
 
             // Mock ServiceURLBuilder.
             String orgOAuth2AuthorizeURL = "https://localhost:9443/o/" + orgId + "/oauth2/authorize";
@@ -866,6 +873,74 @@ public class OrganizationAuthenticatorTest {
 
             // Verify the SAML redirection HTML page is written to the response.
             verify(mockedPrintWriter).print(anyString());
+        }
+    }
+
+    @Test
+    public void testGetRequestedClaimsWithOIDCClaim() throws Exception {
+
+        String tenantDomain = saasAppOwnedTenant;
+        String localClaimUri = "http://wso2.org/claims/username";
+        String oidcClaimUri = "email";
+
+        ClaimMapping[] claimMappings = new ClaimMapping[]{
+                ClaimMapping.build(localClaimUri, localClaimUri, null, false)
+        };
+
+        Claim oidcClaim = new Claim(OIDC_CLAIM_DIALECT_URL, oidcClaimUri);
+
+        when(authenticatorDataHolder.getClaimMetadataManagementService()
+                .getMappedExternalClaimsForLocalClaim(localClaimUri, tenantDomain))
+                .thenReturn(Collections.singletonList(oidcClaim));
+
+        OrganizationAuthenticator spyAuthenticator = Mockito.spy(new OrganizationAuthenticator());
+
+        Method method = OrganizationAuthenticator.class.getDeclaredMethod("getRequestedClaims", ClaimMapping[].class,
+                String.class);
+        method.setAccessible(true);
+        String actualEncodedResult = (String) method.invoke(spyAuthenticator, claimMappings, tenantDomain);
+
+        String expectedJson = "{\"userinfo\":{\"email\":{\"essential\": true}}}";
+        String expectedEncoded = "&claims=" + URLEncoder.encode(expectedJson, "UTF-8");
+
+        Assert.assertEquals(actualEncodedResult, expectedEncoded,
+                "Encoded claims param does not match expected output.");
+    }
+
+    @Test
+    public void testGetRequestedClaimsCatchBlockTriggered() throws Exception {
+
+        String tenantDomain = saasAppOwnedTenant;
+        String localClaimUri = "http://wso2.org/claims/username";
+        String oidcClaimUri = "email";
+
+        ClaimMapping[] claimMappings = new ClaimMapping[]{
+                ClaimMapping.build(localClaimUri, localClaimUri, null, false)
+        };
+        Claim oidcClaim = new Claim(OIDC_CLAIM_DIALECT_URL, oidcClaimUri);
+
+        when(authenticatorDataHolder.getClaimMetadataManagementService()
+                .getMappedExternalClaimsForLocalClaim(localClaimUri, tenantDomain))
+                .thenReturn(Collections.singletonList(oidcClaim));
+
+        OrganizationAuthenticator authenticator = new OrganizationAuthenticator();
+
+        try (MockedStatic<URLEncoder> mocked = mockStatic(URLEncoder.class)) {
+            mocked.when(() -> URLEncoder.encode(Mockito.anyString(), Mockito.anyString()))
+                    .thenThrow(new UnsupportedEncodingException("Simulated encoding failure"));
+
+            Method method = OrganizationAuthenticator.class
+                    .getDeclaredMethod("getRequestedClaims", ClaimMapping[].class, String.class);
+            method.setAccessible(true);
+
+            try {
+                method.invoke(authenticator, claimMappings, tenantDomain);
+                Assert.fail("Expected ClaimMetadataException was not thrown.");
+            } catch (InvocationTargetException e) {
+                Throwable cause = e.getCause();
+                Assert.assertTrue(cause instanceof ClaimMetadataException);
+                Assert.assertEquals(cause.getMessage(), "Error encoding claims parameter");
+            }
         }
     }
 
