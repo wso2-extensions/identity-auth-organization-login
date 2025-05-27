@@ -866,23 +866,27 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private String getRequestedClaims(ClaimMapping[] claimMappings, String tenantDomain) throws ClaimMetadataException {
 
         if (claimMappings != null && claimMappings.length > 0) {
-            StringBuilder paramBuilder = new StringBuilder("&claims={\"userinfo\":{");
+            StringBuilder claimsJson = new StringBuilder("{\"userinfo\":{");
             for (ClaimMapping claimMapping : claimMappings) {
-                String oidcClaim = StringUtils.EMPTY;
                 List<Claim> claims = getClaimManager().getMappedExternalClaimsForLocalClaim(
                         claimMapping.getLocalClaim().getClaimUri(), tenantDomain);
                 if (claims != null) {
                     for (Claim claim : claims) {
                         if (OIDC_CLAIM_DIALECT_URL.equals(claim.getClaimDialectURI())) {
-                            oidcClaim = String.format("\"%s\":{\"essential\": true},", claim.getClaimURI());
-                            paramBuilder.append(oidcClaim);
+                            String oidcClaim = String.format("\"%s\":{\"essential\": true},", claim.getClaimURI());
+                            claimsJson.append(oidcClaim);
                         }
                     }
                 }
             }
-            paramBuilder.deleteCharAt(paramBuilder.length() - 1);
-            paramBuilder.append("}}");
-            return paramBuilder.toString();
+            claimsJson.deleteCharAt(claimsJson.length() - 1); // remove trailing comma
+            claimsJson.append("}}");
+            try {
+                String encoded = urlEncode(claimsJson.toString());
+                return "&claims=" + encoded;
+            } catch (UnsupportedEncodingException e) {
+                throw new ClaimMetadataException("Error encoding claims parameter", e);
+            }
         }
         return StringUtils.EMPTY;
     }
