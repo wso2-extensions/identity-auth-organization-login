@@ -97,6 +97,7 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_DISCOVERY_TYPE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_TYPE_PARAMETER;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_HANDLE_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SAML_RESP;
@@ -118,6 +119,7 @@ public class OrganizationAuthenticatorTest {
     private static final String contextIdentifier = "4952b467-86b2-31df-b63c-0bf25cec4f86s";
     private static final String orgId = "ef35863f-58f0-4a18-aef1-a8d9dd20cfbe";
     private static final String org = "greater";
+    private static final String orgHandle = "greater.com";
     private static final String saasApp = "medlife";
     private static final String saasAppResourceId = "4f412c8a-ace8-4189-bbfb-c7c0d93b8662";
     private static final String saasAppOwnedTenant = "carbon.super";
@@ -459,6 +461,7 @@ public class OrganizationAuthenticatorTest {
 
         return new Object[][]{
                 {ORG_ID_PARAMETER, orgId},
+                {ORG_HANDLE_PARAMETER, orgHandle},
                 {ORG_PARAMETER, org},
                 {LOGIN_HINT_PARAMETER, userEmailWithValidDomain}
         };

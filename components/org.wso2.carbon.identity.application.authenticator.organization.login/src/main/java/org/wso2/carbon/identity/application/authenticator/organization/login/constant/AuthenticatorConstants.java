@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2025, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -43,6 +43,7 @@ public class AuthenticatorConstants {
     public static final String IDP_PARAMETER = "idp";
     public static final String AUTHENTICATOR_PARAMETER = "authenticator";
     public static final String ORG_ID_PARAMETER = "orgId";
+    public static final String ORG_HANDLE_PARAMETER = "orgHandle";
     public static final String ORG_COUNT_PARAMETER = "orgCount";
     public static final String ORG_DESCRIPTION_PARAMETER = "orgDesc";
     public static final String ORG_DISCOVERY_PARAMETER = "orgDiscovery";
@@ -53,6 +54,7 @@ public class AuthenticatorConstants {
     public static final String USERNAME_PARAMETER = "discoveredUsername";
     public static final String ORGANIZATION_DISCOVERY_TYPE = "discoveryType";
     public static final String ORGANIZATION_NAME = "orgName";
+    public static final String ORGANIZATION_HANDLE = "orgHandle";
     public static final String ENABLE_CONFIG = ".enable";
     public static final String LOGIN_HINT_PARAMETER = "login_hint";
     public static final String SP_ID_PARAMETER = "spId";
@@ -61,6 +63,7 @@ public class AuthenticatorConstants {
     public static final String ERROR_MESSAGE = "&authFailure=true&authFailureMsg=";
 
     public static final String REQUEST_ORG_PAGE_URL = "authenticationendpoint/org_name.do";
+    public static final String REQUEST_ORG_HANDLE_PAGE_URL = "authenticationendpoint/org_handle.do";
     public static final String REQUEST_ORG_SELECT_PAGE_URL = "authenticationendpoint/select_org.do";
     public static final String REQUEST_ORG_DISCOVERY_PAGE_URL = "authenticationendpoint/org_discovery.do";
     public static final String REQUEST_ORG_PAGE_URL_CONFIG = "RequestOrganizationPage";
