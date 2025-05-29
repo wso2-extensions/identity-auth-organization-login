@@ -58,9 +58,17 @@ public class AuthenticatorConstants {
     public static final String ENABLE_CONFIG = ".enable";
     public static final String LOGIN_HINT_PARAMETER = "login_hint";
     public static final String SP_ID_PARAMETER = "spId";
+    public static final String DEFAULT_PARAM = "defaultParam";
 
     public static final String ORGANIZATION_LOGIN_FAILURE = "organizationLoginFailure";
     public static final String ERROR_MESSAGE = "&authFailure=true&authFailureMsg=";
+    /**
+     * @deprecated Please use {@link #INVALID_ORGANIZATION_NAME_ERROR_KEY} instead.
+     */
+    @Deprecated
+    public static final String INVALID_ORGANIZATION_NAME_ERROR_MESSAGE = "Invalid Organization Name";
+    public static final String INVALID_ORGANIZATION_HANDLE_ERROR_KEY = "invalid.organization.handle";
+    public static final String INVALID_ORGANIZATION_NAME_ERROR_KEY = "invalid.organization.name";
 
     public static final String REQUEST_ORG_PAGE_URL = "authenticationendpoint/org_name.do";
     public static final String REQUEST_ORG_HANDLE_PAGE_URL = "authenticationendpoint/org_handle.do";
@@ -76,4 +84,13 @@ public class AuthenticatorConstants {
     public static final String OIDC_CLAIM_DIALECT_URL = "http://wso2.org/oidc/claim";
 
     public static final String SAML_RESP = "SAMLResponse";
+
+    /**
+     * All discovery routing types.
+     */
+    public enum DiscoveryPromptOptions {
+        ORG_NAME,
+        ORG_HANDLE,
+        ORG_DISCOVERY
+    }
 }
