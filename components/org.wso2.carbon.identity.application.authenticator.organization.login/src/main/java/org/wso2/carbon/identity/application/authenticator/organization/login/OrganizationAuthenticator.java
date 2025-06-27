@@ -94,6 +94,8 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.Application.CONSOLE_APP;
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.Application.MY_ACCOUNT_APP;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.SESSION_DATA_KEY;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_ID;
 import static org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants.CLIENT_SECRET;
@@ -352,7 +354,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             authenticatorProperties.put(CLIENT_ID, clientId);
             authenticatorProperties.put(CLIENT_SECRET, oauthApp.getOauthConsumerSecret());
             authenticatorProperties.put(ORGANIZATION_ATTRIBUTE, sharedOrgId);
-            authenticatorProperties.put(OAUTH2_AUTHZ_URL, getAuthorizationEndpoint(sharedOrgId, sharedOrgTenantDomain));
+            authenticatorProperties.put(OAUTH2_AUTHZ_URL, getAuthorizationEndpoint(sharedOrgId,
+                    sharedOrgTenantDomain, oauthApp.getApplicationName()));
             authenticatorProperties.put(USERINFO_URL, getUserInfoEndpoint(sharedOrgId, sharedOrgTenantDomain));
             authenticatorProperties.put(OAUTH2_TOKEN_URL, getTokenEndpoint(sharedOrgId, sharedOrgTenantDomain));
             authenticatorProperties.put(CALLBACK_URL, oauthApp.getCallbackUrl());
@@ -968,14 +971,21 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     /**
      * Returns the authorization endpoint url for a given organization.
      *
-     * @param organizationId Id of the organization.
-     * @param tenantDomain   Tenant domain of the organization.
+     * @param organizationId    Id of the organization.
+     * @param tenantDomain      Tenant domain of the organization.
+     * @param applicationName   Name of the application.
      * @return The authorization endpoint URL.
      */
-    private String getAuthorizationEndpoint(String organizationId, String tenantDomain) throws URLBuilderException {
+    private String getAuthorizationEndpoint(String organizationId, String tenantDomain, String applicationName)
+            throws URLBuilderException {
 
-        return ServiceURLBuilder.create().addPath(AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH).setTenant(tenantDomain)
-                .setOrganization(organizationId).build().getAbsolutePublicURL();
+        ServiceURLBuilder serviceURLBuilder =
+                ServiceURLBuilder.create().addPath(AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH).setTenant(tenantDomain)
+                        .setOrganization(organizationId);
+        if ((MY_ACCOUNT_APP.equals(applicationName) || CONSOLE_APP.equals(applicationName))) {
+            serviceURLBuilder.setSkipDomainBranding(true);
+        }
+        return serviceURLBuilder.build().getAbsolutePublicURL();
     }
 
     /**
