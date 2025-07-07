@@ -45,6 +45,7 @@ import org.wso2.carbon.identity.application.common.model.InboundAuthenticationCo
 import org.wso2.carbon.identity.application.common.model.InboundAuthenticationRequestConfig;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
+import org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.central.log.mgt.utils.LogConstants;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
@@ -402,13 +403,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             }
             if (StringUtils.isNotBlank(orgId)) {
                 try {
-                    String logoutUrl = ServiceURLBuilder.create()
-                            .addPath("/oidc/logout")
-                            .setTenant(getTenantDomainByOrgId(orgId))
-                            .setOrganization(orgId)
-                            .build()
-                            .getAbsolutePublicURL();
-                    context.getAuthenticatorProperties().put(OIDC_LOGOUT_URL, logoutUrl);
+                    setOIDCLogoutURL(context, orgId);
+                    setCallbackURL(context);
                 } catch (URLBuilderException e) {
                     throw new AuthenticationFailedException(e.getMessage());
                 }
@@ -1173,5 +1169,48 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             return runtimeParams.get(parameter);
         }
         return StringUtils.EMPTY;
+    }
+
+    /**
+     * Sets the OIDC logout URL for the authenticator.
+     *
+     * @param context Authentication context.
+     * @param orgId   Organization ID.
+     * @throws AuthenticationFailedException If an error occurs while setting the logout URL.
+     * @throws URLBuilderException           If an error occurs while building the URL.
+     */
+    private void setOIDCLogoutURL(AuthenticationContext context, String orgId)
+            throws AuthenticationFailedException, URLBuilderException {
+
+        String applicationName = context.getServiceProviderName();
+        ServiceURLBuilder serviceURLBuilder = ServiceURLBuilder.create()
+                .addPath("/oidc/logout")
+                .setTenant(getTenantDomainByOrgId(orgId))
+                .setOrganization(orgId);
+        if ((MY_ACCOUNT_APP.equals(applicationName) || CONSOLE_APP.equals(applicationName))) {
+            serviceURLBuilder.setSkipDomainBranding(true);
+        }
+        String logoutUrl = serviceURLBuilder.build().getAbsolutePublicURL();
+        context.getAuthenticatorProperties().put(OIDC_LOGOUT_URL, logoutUrl);
+    }
+
+    /**
+     * Sets the callback URL for the authenticator.
+     * For the My Account and Console applications, the callback URL is set with domain branding skipped.
+     * For all other applications, the organization's default callback URL is used (maintaining the previous behavior
+     * before special handling for Console and My Account).
+     *
+     * @param context Authentication context.
+     * @throws URLBuilderException If an error occurs while building the URL.
+     */
+    private static void setCallbackURL(AuthenticationContext context)
+            throws URLBuilderException {
+
+        String applicationName = context.getServiceProviderName();
+        if ((MY_ACCOUNT_APP.equals(applicationName) || CONSOLE_APP.equals(applicationName))) {
+            String callbackUrl =  ServiceURLBuilder.create().addPath(FrameworkConstants.COMMONAUTH)
+                    .setSkipDomainBranding(true).build().getAbsolutePublicURL();
+            context.getAuthenticatorProperties().put(IdentityApplicationConstants.OAuth2.CALLBACK_URL, callbackUrl);
+        }
     }
 }
