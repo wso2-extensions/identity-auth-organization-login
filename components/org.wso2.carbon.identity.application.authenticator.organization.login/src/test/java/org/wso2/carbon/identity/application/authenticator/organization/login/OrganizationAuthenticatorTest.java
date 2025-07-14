@@ -186,6 +186,7 @@ public class OrganizationAuthenticatorTest {
     private DiscoveryConfig mockDiscoveryConfig;
     private MockedStatic<IdentityTenantUtil> mockedUtilities;
     private MockedStatic<OrganizationConfigManagerUtil> mockedOrganizationConfigManagerUtil;
+    private MockedStatic<LoggerUtils> mockedLoggerUtils;
 
     @Mock
     private OrganizationDiscoveryManager mockOrganizationDiscoveryManager;
@@ -195,6 +196,7 @@ public class OrganizationAuthenticatorTest {
 
         mockCarbonContext();
         mockIdentityTenantUtils();
+        mockLoggerUtils();
         mockOrganizationConfigManagerUtil();
     }
 
@@ -203,6 +205,7 @@ public class OrganizationAuthenticatorTest {
 
         mockedUtilities.close();
         mockedOrganizationConfigManagerUtil.close();
+        mockedLoggerUtils.close();
     }
 
     @BeforeMethod
@@ -249,6 +252,12 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getProperties()).thenReturn(mockContextParam);
     }
 
+    @AfterClass
+    public void afterClass() {
+
+        mockedLoggerUtils.close();
+    }
+
     private void mockCarbonContext() {
 
         String carbonHome = Paths.get(System.getProperty("user.dir"), "target", "test-classes").toString();
@@ -274,6 +283,12 @@ public class OrganizationAuthenticatorTest {
                 Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
         mockedOrganizationConfigManagerUtil.when(
                 OrganizationConfigManagerUtil::resolveDefaultDiscoveryParam).thenReturn(ORGANIZATION_HANDLE);
+    }
+
+    private void mockLoggerUtils() {
+
+        mockedLoggerUtils = Mockito.mockStatic(LoggerUtils.class);
+        mockedLoggerUtils.when(LoggerUtils::isDiagnosticLogsEnabled).thenReturn(false);
     }
 
     @Test
@@ -846,8 +861,7 @@ public class OrganizationAuthenticatorTest {
         when(mockOAuthConsumerAppDTO.getOauthConsumerSecret()).thenReturn(secretKey);
         when(mockOAuthConsumerAppDTO.getCallbackUrl()).thenReturn("https://localhost:9443/commonauth");
 
-        try (MockedStatic<ServiceURLBuilder> serviceURLBuilder = Mockito.mockStatic(ServiceURLBuilder.class);
-             MockedStatic<LoggerUtils> loggerUtils = Mockito.mockStatic(LoggerUtils.class)) {
+        try (MockedStatic<ServiceURLBuilder> serviceURLBuilder = Mockito.mockStatic(ServiceURLBuilder.class)) {
 
             // Mock ServiceURLBuilder.
             String orgOAuth2AuthorizeURL = "https://localhost:9443/o/" + orgId + "/oauth2/authorize";
@@ -869,9 +883,6 @@ public class OrganizationAuthenticatorTest {
             mockParamMap.put(SAML_RESP, new String[]{samlResponse});
             when(mockServletRequest.getParameterMap()).thenReturn(mockParamMap);
             when(mockServletRequest.getParameter(SAML_RESP)).thenReturn(samlResponse);
-
-            // Mock logger utils to disable diagnostic logs.
-            loggerUtils.when(LoggerUtils::isDiagnosticLogsEnabled).thenReturn(false);
 
             // Set SAML SSO response HTML page configuration.
             authenticatorDataHolder.setUseSamlSsoResponseHtmlPage(isSamlRedirectionHtmlPageAvailable);
