@@ -344,11 +344,11 @@
 
     <properties>
 
-        <carbon.identity.org.mgt.version>1.4.129</carbon.identity.org.mgt.version>
+        <carbon.identity.org.mgt.version>2.0.16</carbon.identity.org.mgt.version>
         <org.wso2.identity.organization.mgt.imp.pkg.version.range>[1.0.0,3.0.0)
         </org.wso2.identity.organization.mgt.imp.pkg.version.range>
 
-        <carbon.identity.org.mgt.core.version>1.1.14</carbon.identity.org.mgt.core.version>
+        <carbon.identity.org.mgt.core.version>1.1.45</carbon.identity.org.mgt.core.version>
         <org.wso2.identity.organization.mgt.core.imp.pkg.version.range>[1.0.0,2.0.0)
         </org.wso2.identity.organization.mgt.core.imp.pkg.version.range>
 
