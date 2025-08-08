@@ -189,7 +189,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private static final String SSO_ADDITIONAL_PARAMS = "ssoAdditionalParams";
     private static final String DYNAMIC_PARAMETER_LOOKUP_REGEX = "\\$\\{(\\w+)\\}";
     private static final String DYNAMIC_AUTH_PARAMS_LOOKUP_REGEX = "\\$authparam\\{(\\w+)\\}";
-    private String discoveryDefaultParam = "orgHandle";
+    private String discoveryDefaultParam = ORG_HANDLE_PARAMETER;
 
     @Override
     public String getFriendlyName() {
@@ -468,23 +468,19 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                 context.removeProperty(ORG_DISCOVERY_PARAMETER);
                 return AuthenticatorFlowStatus.INCOMPLETE;
             }
-        } else {
-            if (ORG_HANDLE_PARAMETER.equals(discoveryDefaultParam)
-                    && isParameterExists(request, runtimeParams, ORG_HANDLE_PARAMETER)) {
-                String organizationHandle = getParameter(request, runtimeParams, ORG_HANDLE_PARAMETER);
-                context.setProperty(ORG_HANDLE_PARAMETER, organizationHandle);
-                if (!validateOrganizationHandle(organizationHandle, context, response)) {
-                    context.removeProperty(ORG_HANDLE_PARAMETER);
-                    return AuthenticatorFlowStatus.INCOMPLETE;
-                }
-            } else if (ORG_PARAMETER.equals(discoveryDefaultParam)
-                    && isParameterExists(request, runtimeParams, ORG_PARAMETER)) {
-                String organizationName = getParameter(request, runtimeParams, ORG_PARAMETER);
-                context.setProperty(ORG_PARAMETER, organizationName);
-                if (!validateOrganizationName(organizationName, context, response)) {
-                    context.removeProperty(ORG_PARAMETER);
-                    return AuthenticatorFlowStatus.INCOMPLETE;
-                }
+        } else if (isParameterExists(request, runtimeParams, ORG_HANDLE_PARAMETER)) {
+            String organizationHandle = getParameter(request, runtimeParams, ORG_HANDLE_PARAMETER);
+            context.setProperty(ORG_HANDLE_PARAMETER, organizationHandle);
+            if (!validateOrganizationHandle(organizationHandle, context, response)) {
+                context.removeProperty(ORG_HANDLE_PARAMETER);
+                return AuthenticatorFlowStatus.INCOMPLETE;
+            }
+        } else if (isParameterExists(request, runtimeParams, ORG_PARAMETER)) {
+            String organizationName = getParameter(request, runtimeParams, ORG_PARAMETER);
+            context.setProperty(ORG_PARAMETER, organizationName);
+            if (!validateOrganizationName(organizationName, context, response)) {
+                context.removeProperty(ORG_PARAMETER);
+                return AuthenticatorFlowStatus.INCOMPLETE;
             }
         }
 
@@ -736,8 +732,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private String resolveRedirectURL(AuthenticationContext context, StringBuilder queryStringBuilder,
                                       String prompt, boolean discoveryEnabled) throws URLBuilderException {
 
-        AuthenticatorConstants.DiscoveryPromptOptions discoveryPromptOption
-                = determineDiscoveryPromptOption(context, prompt, discoveryEnabled);
+        AuthenticatorConstants.DiscoveryPromptOptions discoveryPromptOption = determineDiscoveryPromptOption(
+                context, prompt, discoveryEnabled);
         String baseUrl = getRoutingBaseUrl(discoveryPromptOption, context);
 
         return FrameworkUtils.appendQueryParamsStringToUrl(baseUrl, queryStringBuilder.toString());
@@ -746,29 +742,41 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private AuthenticatorConstants.DiscoveryPromptOptions determineDiscoveryPromptOption(
             AuthenticationContext context, String prompt, boolean discoveryEnabled) {
 
-        boolean isOrgParamDefault = ORG_PARAMETER.equals(discoveryDefaultParam);
-
-        if (isOrgParamDefault) {
-            if (StringUtils.equals(prompt, ORGANIZATION_NAME) || (prompt == null
-                    && shouldRedirect(context, ORG_DISCOVERY_PARAMETER, ORG_PARAMETER, discoveryEnabled))) {
-                return AuthenticatorConstants.DiscoveryPromptOptions.ORG_NAME;
-            }
-        } else {
-            if (StringUtils.equals(prompt, ORG_HANDLE_PARAMETER) || (prompt == null
-                    && shouldRedirect(context, ORG_DISCOVERY_PARAMETER, ORG_HANDLE_PARAMETER, discoveryEnabled))) {
-                return AuthenticatorConstants.DiscoveryPromptOptions.ORG_HANDLE;
+        // If prompt is explicitly provided.
+        if (StringUtils.isNotEmpty(prompt)) {
+            switch (prompt) {
+                case ORGANIZATION_NAME:
+                    return AuthenticatorConstants.DiscoveryPromptOptions.ORG_NAME;
+                case ORG_HANDLE_PARAMETER:
+                    return AuthenticatorConstants.DiscoveryPromptOptions.ORG_HANDLE;
+                case ORG_DISCOVERY_PARAMETER:
+                    if (discoveryEnabled) {
+                        return AuthenticatorConstants.DiscoveryPromptOptions.ORG_DISCOVERY;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
-        return AuthenticatorConstants.DiscoveryPromptOptions.ORG_DISCOVERY;
-    }
+        // If no prompt, check context for the property to handle invalid input scenarios.
+        if (context.getProperty(ORG_PARAMETER) != null) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_NAME;
+        }
+        if (context.getProperty(ORG_HANDLE_PARAMETER) != null) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_HANDLE;
+        }
+        if (context.getProperty(ORG_DISCOVERY_PARAMETER) != null && discoveryEnabled) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_DISCOVERY;
+        }
 
-    private boolean shouldRedirect(AuthenticationContext context, String discoveryParam, String targetParam,
-                                   boolean discoveryEnabled) {
-
-        return context.getProperty(discoveryParam) == null
-                && context.getProperty(targetParam) == null
-                && !discoveryEnabled
-                || context.getProperty(targetParam) != null;
+        // Else fallback to the default options.
+        if (discoveryEnabled) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_DISCOVERY;
+        }
+        if (ORG_HANDLE_PARAMETER.equals(discoveryDefaultParam)) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_HANDLE;
+        }
+        return AuthenticatorConstants.DiscoveryPromptOptions.ORG_NAME;
     }
 
     private String getRoutingBaseUrl(AuthenticatorConstants.DiscoveryPromptOptions routingType,

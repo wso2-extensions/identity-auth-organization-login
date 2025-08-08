@@ -121,7 +121,6 @@ public class OrganizationAuthenticatorTest {
     private static final String contextIdentifier = "4952b467-86b2-31df-b63c-0bf25cec4f86s";
     private static final String orgId = "ef35863f-58f0-4a18-aef1-a8d9dd20cfbe";
     private static final String org = "greater";
-    private static final String orgHandle = "greater.com";
     private static final String saasApp = "medlife";
     private static final String saasAppResourceId = "4f412c8a-ace8-4189-bbfb-c7c0d93b8662";
     private static final String saasAppOwnedTenant = "carbon.super";
@@ -250,12 +249,6 @@ public class OrganizationAuthenticatorTest {
         when(mockRealmService.getTenantManager().getTenant(anyInt())).thenReturn(tenant);
         when(tenant.getAssociatedOrganizationUUID()).thenReturn(orgId);
         when(mockAuthenticationContext.getProperties()).thenReturn(mockContextParam);
-    }
-
-    @AfterClass
-    public void afterClass() {
-
-        mockedLoggerUtils.close();
     }
 
     private void mockCarbonContext() {
