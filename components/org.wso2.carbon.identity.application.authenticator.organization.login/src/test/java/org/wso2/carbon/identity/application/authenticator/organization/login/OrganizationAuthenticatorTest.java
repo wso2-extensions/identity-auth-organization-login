@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2024, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2025, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -53,6 +53,7 @@ import org.wso2.carbon.identity.oauth.dto.OAuthConsumerAppDTO;
 import org.wso2.carbon.identity.organization.config.service.OrganizationConfigManager;
 import org.wso2.carbon.identity.organization.config.service.model.ConfigProperty;
 import org.wso2.carbon.identity.organization.config.service.model.DiscoveryConfig;
+import org.wso2.carbon.identity.organization.config.service.util.OrganizationConfigManagerUtil;
 import org.wso2.carbon.identity.organization.discovery.service.AttributeBasedOrganizationDiscoveryHandler;
 import org.wso2.carbon.identity.organization.discovery.service.OrganizationDiscoveryManager;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
@@ -96,6 +97,7 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.LOGIN_HINT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.OIDC_CLAIM_DIALECT_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_DISCOVERY_TYPE;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_HANDLE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_TYPE_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
@@ -182,6 +184,7 @@ public class OrganizationAuthenticatorTest {
     private OrganizationConfigManager mockOrganizationConfigManager;
     private DiscoveryConfig mockDiscoveryConfig;
     private MockedStatic<IdentityTenantUtil> mockedUtilities;
+    private MockedStatic<OrganizationConfigManagerUtil> mockedOrganizationConfigManagerUtil;
     private MockedStatic<LoggerUtils> mockedLoggerUtils;
 
     @Mock
@@ -193,6 +196,15 @@ public class OrganizationAuthenticatorTest {
         mockCarbonContext();
         mockIdentityTenantUtils();
         mockLoggerUtils();
+        mockOrganizationConfigManagerUtil();
+    }
+
+    @AfterClass
+    public void cleanup() {
+
+        mockedUtilities.close();
+        mockedOrganizationConfigManagerUtil.close();
+        mockedLoggerUtils.close();
     }
 
     @BeforeMethod
@@ -239,12 +251,6 @@ public class OrganizationAuthenticatorTest {
         when(mockAuthenticationContext.getProperties()).thenReturn(mockContextParam);
     }
 
-    @AfterClass
-    public void afterClass() {
-
-        mockedLoggerUtils.close();
-    }
-
     private void mockCarbonContext() {
 
         String carbonHome = Paths.get(System.getProperty("user.dir"), "target", "test-classes").toString();
@@ -262,6 +268,14 @@ public class OrganizationAuthenticatorTest {
         mockedUtilities = Mockito.mockStatic(IdentityTenantUtil.class, Mockito.withSettings()
                 .defaultAnswer(Mockito.CALLS_REAL_METHODS));
         mockedUtilities.when(() -> IdentityTenantUtil.getTenantId(anyString())).thenReturn(-1234);
+    }
+
+    private void mockOrganizationConfigManagerUtil() {
+
+        mockedOrganizationConfigManagerUtil = Mockito.mockStatic(OrganizationConfigManagerUtil.class,
+                Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
+        mockedOrganizationConfigManagerUtil.when(
+                OrganizationConfigManagerUtil::resolveDefaultDiscoveryParam).thenReturn(ORGANIZATION_HANDLE);
     }
 
     private void mockLoggerUtils() {
@@ -554,15 +568,19 @@ public class OrganizationAuthenticatorTest {
     public Object[][] testGetInvalidAuthenticatorParamsData() {
 
         return new Object[][]{
-                {ORG_ID_PARAMETER, orgId, "/org_discovery.do"},
-                {ORG_PARAMETER, org, "/org_name.do"},
-                {LOGIN_HINT_PARAMETER, userEmailWithInvalidDomain, "/org_discovery.do"}
+                {ORG_ID_PARAMETER, orgId, "/org_discovery.do", ORG_PARAMETER},
+                {ORG_PARAMETER, org, "/org_name.do", ORG_PARAMETER},
+                {LOGIN_HINT_PARAMETER, userEmailWithInvalidDomain, "/org_discovery.do", ORG_PARAMETER}
         };
     }
 
     @Test(dataProvider = "testGetInvalidAuthenticatorParamsData")
-    public void testProcessWithInvalidAuthenticatorParam(String paramKey, String paramValue, String redirectPage)
+    public void testProcessWithInvalidAuthenticatorParam(String paramKey, String paramValue, String redirectPage,
+                                                         String defaultParam)
             throws Exception {
+
+        mockedOrganizationConfigManagerUtil.when(OrganizationConfigManagerUtil::resolveDefaultDiscoveryParam)
+                .thenReturn(defaultParam);
 
         AuthenticationContext spyContext = Mockito.spy(new AuthenticationContext());
         authenticatorParamProperties.put(paramKey, paramValue);
@@ -596,6 +614,7 @@ public class OrganizationAuthenticatorTest {
 
         when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(saasAppOwnedTenant)).thenReturn(
                 saasAppOwnedOrgId);
+        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(anyString())).thenReturn(orgId);
         when(authenticatorDataHolder.getOrganizationManager().getOrganizationNameById(anyString()))
                 .thenThrow(handleClientException(ERROR_CODE_INVALID_ORGANIZATION_ID));
 

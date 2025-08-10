@@ -62,6 +62,7 @@ import org.wso2.carbon.identity.organization.config.service.OrganizationConfigMa
 import org.wso2.carbon.identity.organization.config.service.exception.OrganizationConfigException;
 import org.wso2.carbon.identity.organization.config.service.model.ConfigProperty;
 import org.wso2.carbon.identity.organization.config.service.model.DiscoveryConfig;
+import org.wso2.carbon.identity.organization.config.service.util.OrganizationConfigManagerUtil;
 import org.wso2.carbon.identity.organization.discovery.service.AttributeBasedOrganizationDiscoveryHandler;
 import org.wso2.carbon.identity.organization.discovery.service.OrganizationDiscoveryManager;
 import org.wso2.carbon.identity.organization.management.application.OrgApplicationManager;
@@ -111,12 +112,15 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_NAME;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHENTICATOR_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.AUTHORIZATION_ENDPOINT_ORGANIZATION_PATH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.DEFAULT_PARAM;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ENABLE_CONFIG;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.EQUAL_SIGN;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ERROR_MESSAGE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.IDP_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ID_TOKEN_ORG_ID_PARAM;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INBOUND_AUTH_TYPE_OAUTH;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INVALID_ORGANIZATION_HANDLE_ERROR_KEY;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.INVALID_ORGANIZATION_NAME_ERROR_KEY;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.LOGIN_HINT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.OIDC_CLAIM_DIALECT_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_ATTRIBUTE;
@@ -128,10 +132,12 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_ENABLED_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_TYPE_PARAMETER;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_HANDLE_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.PROMPT_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_DISCOVERY_PAGE_URL;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_HANDLE_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL_CONFIG;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_SELECT_PAGE_URL;
@@ -149,8 +155,10 @@ import static org.wso2.carbon.identity.organization.management.service.constant.
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_ORGANIZATION_DOMAIN_FROM_TENANT_DOMAIN;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_ORGANIZATION_LOGIN;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_TENANT_DOMAIN_FROM_ORGANIZATION_DOMAIN;
+import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_THE_DEFAULT_DISCOVERY_PARAM;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_APPLICATION;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME;
+import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RETRIEVING_ORGANIZATION_ID_BY_HANDLE;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_VALIDATING_ORGANIZATION_DISCOVERY_ATTRIBUTE;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_VALIDATING_ORGANIZATION_LOGIN_HINT_ATTRIBUTE;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_INVALID_APPLICATION;
@@ -181,6 +189,7 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
     private static final String SSO_ADDITIONAL_PARAMS = "ssoAdditionalParams";
     private static final String DYNAMIC_PARAMETER_LOOKUP_REGEX = "\\$\\{(\\w+)\\}";
     private static final String DYNAMIC_AUTH_PARAMS_LOOKUP_REGEX = "\\$authparam\\{(\\w+)\\}";
+    private String discoveryDefaultParam = ORG_HANDLE_PARAMETER;
 
     @Override
     public String getFriendlyName() {
@@ -316,8 +325,10 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         String application = context.getServiceProviderName();
         String appResideTenantDomain = context.getTenantDomain();
 
-        if ((!context.getProperties().containsKey(ORG_PARAMETER) && !context.getProperties()
-                .containsKey(ORG_DISCOVERY_PARAMETER)) || !context.getProperties().containsKey(ORG_ID_PARAMETER)) {
+        if ((!context.getProperties().containsKey(ORG_PARAMETER)
+                && !context.getProperties().containsKey(ORG_DISCOVERY_PARAMETER)
+                && !context.getProperties().containsKey(ORG_HANDLE_PARAMETER))
+                || !context.getProperties().containsKey(ORG_ID_PARAMETER)) {
             throw handleAuthFailures(ERROR_CODE_ORG_PARAMETERS_NOT_RESOLVED);
         }
 
@@ -417,6 +428,11 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         }
 
         Map<String, String> runtimeParams = getRuntimeParams(context);
+        try {
+            discoveryDefaultParam = OrganizationConfigManagerUtil.resolveDefaultDiscoveryParam();
+        } catch (OrganizationConfigException e) {
+            throw handleAuthFailures(ERROR_CODE_ERROR_RESOLVING_THE_DEFAULT_DISCOVERY_PARAM, e);
+        }
 
         /**
          * First priority for organization Id.
@@ -452,6 +468,13 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                 context.removeProperty(ORG_DISCOVERY_PARAMETER);
                 return AuthenticatorFlowStatus.INCOMPLETE;
             }
+        } else if (isParameterExists(request, runtimeParams, ORG_HANDLE_PARAMETER)) {
+            String organizationHandle = getParameter(request, runtimeParams, ORG_HANDLE_PARAMETER);
+            context.setProperty(ORG_HANDLE_PARAMETER, organizationHandle);
+            if (!validateOrganizationHandle(organizationHandle, context, response)) {
+                context.removeProperty(ORG_HANDLE_PARAMETER);
+                return AuthenticatorFlowStatus.INCOMPLETE;
+            }
         } else if (isParameterExists(request, runtimeParams, ORG_PARAMETER)) {
             String organizationName = getParameter(request, runtimeParams, ORG_PARAMETER);
             context.setProperty(ORG_PARAMETER, organizationName);
@@ -461,8 +484,9 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             }
         }
 
-        if (!context.getProperties().containsKey(ORG_PARAMETER) && !context.getProperties()
-                .containsKey(ORG_DISCOVERY_PARAMETER)) {
+        if (!context.getProperties().containsKey(ORG_PARAMETER) &&
+                !context.getProperties().containsKey(ORG_HANDLE_PARAMETER) &&
+                !context.getProperties().containsKey(ORG_DISCOVERY_PARAMETER)) {
             if (request.getParameterMap().containsKey(PROMPT_PARAMETER)) {
                 String prompt = request.getParameter(PROMPT_PARAMETER);
                 context.setProperty(PROMPT_PARAMETER, prompt);
@@ -548,10 +572,28 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
                 redirectToOrgDiscoveryInputCapture(response, context);
             }
         } catch (OrganizationManagementClientException e) {
-            context.setProperty(ORGANIZATION_LOGIN_FAILURE, "Invalid Organization Name");
+            context.setProperty(ORGANIZATION_LOGIN_FAILURE, INVALID_ORGANIZATION_NAME_ERROR_KEY);
             redirectToOrgDiscoveryInputCapture(response, context);
         } catch (OrganizationManagementException e) {
             throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_ORGANIZATIONS_BY_NAME, e);
+        }
+        return false;
+    }
+
+    private boolean validateOrganizationHandle(String organizationHandle, AuthenticationContext context,
+                                               HttpServletResponse response) throws AuthenticationFailedException {
+
+        try {
+            String organizationId = getOrganizationManager().resolveOrganizationId(organizationHandle);
+            String organizationName = getOrganizationNameById(organizationId);
+            if (StringUtils.isNotBlank(organizationName)) {
+                return validateOrganizationName(organizationName, context, response);
+            }
+        } catch (OrganizationManagementClientException e) {
+            context.setProperty(ORGANIZATION_LOGIN_FAILURE, INVALID_ORGANIZATION_HANDLE_ERROR_KEY);
+            redirectToOrgDiscoveryInputCapture(response, context);
+        } catch (OrganizationManagementException e) {
+            throw handleAuthFailures(ERROR_CODE_ERROR_RETRIEVING_ORGANIZATION_ID_BY_HANDLE, e);
         }
         return false;
     }
@@ -663,47 +705,91 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             addQueryParam(queryStringBuilder, IDP_PARAMETER, context.getExternalIdP().getName());
             addQueryParam(queryStringBuilder, AUTHENTICATOR_PARAMETER, getName());
             addQueryParam(queryStringBuilder, SP_ID_PARAMETER, context.getServiceProviderResourceId());
+            addQueryParam(queryStringBuilder, DEFAULT_PARAM, discoveryDefaultParam);
             boolean discoveryEnabled = isOrganizationDiscoveryEnabled(context);
             if (discoveryEnabled) {
                 addQueryParam(queryStringBuilder, ORG_DISCOVERY_ENABLED_PARAMETER, "true");
             }
-
-            boolean redirectToOrgNameCapture = false;
             String prompt = (String) context.getProperty(PROMPT_PARAMETER);
             if (prompt != null) {
                 context.removeProperty(ORGANIZATION_LOGIN_FAILURE);
                 context.removeProperty(PROMPT_PARAMETER);
-                if (StringUtils.equals(prompt, ORGANIZATION_NAME)) {
-                    redirectToOrgNameCapture = true;
-                }
-            } else if (context.getProperty(ORG_DISCOVERY_PARAMETER) == null &&
-                    context.getProperty(ORG_PARAMETER) == null && !discoveryEnabled) {
-                redirectToOrgNameCapture = true;
-            } else if (context.getProperty(ORG_PARAMETER) != null) {
-                redirectToOrgNameCapture = true;
             }
-
             if (context.getProperties().get(ORGANIZATION_LOGIN_FAILURE) != null) {
                 queryStringBuilder.append(ERROR_MESSAGE)
                         .append(urlEncode((String) context.getProperties().get(ORGANIZATION_LOGIN_FAILURE)));
             }
-
             if (context.getProperty(SELF_REGISTRATION_PARAMETER) != null) {
                 addQueryParam(queryStringBuilder, SELF_REGISTRATION_PARAMETER,
                         (String) context.getProperty(SELF_REGISTRATION_PARAMETER));
             }
-
-            String url;
-            if (redirectToOrgNameCapture) {
-                url = FrameworkUtils.appendQueryParamsStringToUrl(getOrganizationRequestPageUrl(context),
-                        queryStringBuilder.toString());
-            } else {
-                url = FrameworkUtils.appendQueryParamsStringToUrl(getOrganizationDomainPageUrl(),
-                        queryStringBuilder.toString());
-            }
-            response.sendRedirect(url);
+            response.sendRedirect(resolveRedirectURL(context, queryStringBuilder, prompt, discoveryEnabled));
         } catch (IOException | URLBuilderException e) {
             throw handleAuthFailures(ERROR_CODE_ERROR_REQUEST_ORGANIZATION_REDIRECT, e);
+        }
+    }
+
+    private String resolveRedirectURL(AuthenticationContext context, StringBuilder queryStringBuilder,
+                                      String prompt, boolean discoveryEnabled) throws URLBuilderException {
+
+        AuthenticatorConstants.DiscoveryPromptOptions discoveryPromptOption = determineDiscoveryPromptOption(
+                context, prompt, discoveryEnabled);
+        String baseUrl = getRoutingBaseUrl(discoveryPromptOption, context);
+
+        return FrameworkUtils.appendQueryParamsStringToUrl(baseUrl, queryStringBuilder.toString());
+    }
+
+    private AuthenticatorConstants.DiscoveryPromptOptions determineDiscoveryPromptOption(
+            AuthenticationContext context, String prompt, boolean discoveryEnabled) {
+
+        // If prompt is explicitly provided.
+        if (StringUtils.isNotEmpty(prompt)) {
+            switch (prompt) {
+                case ORGANIZATION_NAME:
+                    return AuthenticatorConstants.DiscoveryPromptOptions.ORG_NAME;
+                case ORG_HANDLE_PARAMETER:
+                    return AuthenticatorConstants.DiscoveryPromptOptions.ORG_HANDLE;
+                case ORG_DISCOVERY_PARAMETER:
+                    if (discoveryEnabled) {
+                        return AuthenticatorConstants.DiscoveryPromptOptions.ORG_DISCOVERY;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        // If no prompt, check context for the property to handle invalid input scenarios.
+        if (context.getProperty(ORG_PARAMETER) != null) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_NAME;
+        }
+        if (context.getProperty(ORG_HANDLE_PARAMETER) != null) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_HANDLE;
+        }
+        if (context.getProperty(ORG_DISCOVERY_PARAMETER) != null && discoveryEnabled) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_DISCOVERY;
+        }
+
+        // Else fallback to the default options.
+        if (discoveryEnabled) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_DISCOVERY;
+        }
+        if (ORG_HANDLE_PARAMETER.equals(discoveryDefaultParam)) {
+            return AuthenticatorConstants.DiscoveryPromptOptions.ORG_HANDLE;
+        }
+        return AuthenticatorConstants.DiscoveryPromptOptions.ORG_NAME;
+    }
+
+    private String getRoutingBaseUrl(AuthenticatorConstants.DiscoveryPromptOptions routingType,
+                                     AuthenticationContext context) throws URLBuilderException {
+
+        switch (routingType) {
+            case ORG_NAME:
+                return getOrganizationRequestPageUrl(context);
+            case ORG_HANDLE:
+                return getOrganizationHandleRequestPageUrl();
+            case ORG_DISCOVERY:
+            default:
+                return getOrganizationDomainPageUrl();
         }
     }
 
@@ -1023,6 +1109,16 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             requestOrgPageUrl = REQUEST_ORG_PAGE_URL;
         }
         return ServiceURLBuilder.create().addPath(requestOrgPageUrl).build().getAbsolutePublicURL();
+    }
+
+    /**
+     * Get the request organization handle page url.
+     *
+     * @return The url path to request organization handle.
+     */
+    private String getOrganizationHandleRequestPageUrl() throws URLBuilderException {
+
+        return ServiceURLBuilder.create().addPath(REQUEST_ORG_HANDLE_PAGE_URL).build().getAbsolutePublicURL();
     }
 
     private String getOrganizationDomainPageUrl() throws URLBuilderException {
