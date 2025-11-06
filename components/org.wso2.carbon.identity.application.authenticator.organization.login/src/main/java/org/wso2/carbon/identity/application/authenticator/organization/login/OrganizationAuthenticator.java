@@ -68,7 +68,6 @@ import org.wso2.carbon.identity.organization.management.service.OrganizationMana
 import org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementClientException;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
-import org.wso2.carbon.identity.organization.management.service.model.BasicOrganization;
 import org.wso2.carbon.identity.organization.management.service.model.Organization;
 import org.wso2.carbon.utils.DiagnosticLog;
 
@@ -124,8 +123,6 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_DISCOVERY_TYPE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_LOGIN_FAILURE;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORGANIZATION_NAME;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_COUNT_PARAMETER;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DESCRIPTION_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_ENABLED_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_DISCOVERY_TYPE_PARAMETER;
@@ -137,7 +134,6 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_HANDLE_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_PAGE_URL_CONFIG;
-import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_SELECT_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SELF_REGISTRATION_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SP_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.TOKEN_ENDPOINT_ORGANIZATION_PATH;
@@ -973,48 +969,6 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             return paramBuilder.toString();
         }
         return StringUtils.EMPTY;
-    }
-
-    /**
-     * When organizations with same name exists, this method construct the redirect url to select the correct
-     * organization out of the similar name organizations by passing the organization name and description.
-     *
-     * @param response      servlet response.
-     * @param context       authentication context.
-     * @param organizations The list of organizations with similar name.
-     * @throws AuthenticationFailedException on errors when setting the redirect URL to select the relevant
-     *                                       organization.
-     */
-    @SuppressFBWarnings(value = "UNVALIDATED_REDIRECT", justification = "Redirect params are not based on user inputs.")
-    private void redirectToSelectOrganization(HttpServletResponse response, AuthenticationContext context,
-                                              List<Organization> organizations) throws AuthenticationFailedException {
-
-        try {
-            StringBuilder queryStringBuilder = new StringBuilder();
-            queryStringBuilder.append(SESSION_DATA_KEY).append(EQUAL_SIGN)
-                    .append(urlEncode(context.getContextIdentifier()));
-            addQueryParam(queryStringBuilder, IDP_PARAMETER, context.getExternalIdP().getName());
-            addQueryParam(queryStringBuilder, AUTHENTICATOR_PARAMETER, getName());
-            addQueryParam(queryStringBuilder, ORG_COUNT_PARAMETER, String.valueOf(organizations.size()));
-            int count = 1;
-            for (Organization organization : organizations) {
-                addQueryParam(queryStringBuilder, ORG_ID_PARAMETER + "_" + count, organization.getId());
-                addQueryParam(queryStringBuilder, ORG_PARAMETER + "_" + count, organization.getName());
-                String orgDescription = StringUtils.EMPTY;
-                if (organization.getDescription() != null) {
-                    orgDescription = organization.getDescription();
-                }
-                addQueryParam(queryStringBuilder, ORG_DESCRIPTION_PARAMETER + "_" + count, orgDescription);
-                count += 1;
-            }
-
-            String url = FrameworkUtils.appendQueryParamsStringToUrl(ServiceURLBuilder.create()
-                            .addPath(REQUEST_ORG_SELECT_PAGE_URL).build().getAbsolutePublicURL(),
-                    queryStringBuilder.toString());
-            response.sendRedirect(url);
-        } catch (IOException | URLBuilderException e) {
-            throw handleAuthFailures(ERROR_CODE_ERROR_REQUEST_ORGANIZATION_REDIRECT, e);
-        }
     }
 
     private void addQueryParam(StringBuilder builder, String query, String param) throws UnsupportedEncodingException {
