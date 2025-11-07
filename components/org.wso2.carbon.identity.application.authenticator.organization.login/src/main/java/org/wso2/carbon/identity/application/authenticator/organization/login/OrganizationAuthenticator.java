@@ -453,6 +453,13 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             if (StringUtils.isNotBlank(organizationName)) {
                 context.setProperty(ORG_PARAMETER, organizationName);
             }
+        } else if (isParameterExists(request, runtimeParams, ORG_HANDLE_PARAMETER)) {
+            String organizationHandle = getParameter(request, runtimeParams, ORG_HANDLE_PARAMETER);
+            context.setProperty(ORG_HANDLE_PARAMETER, organizationHandle);
+            if (!validateOrganizationHandle(organizationHandle, context, response)) {
+                context.removeProperty(ORG_HANDLE_PARAMETER);
+                return AuthenticatorFlowStatus.INCOMPLETE;
+            }
         } else if (isParameterExists(request, runtimeParams, LOGIN_HINT_PARAMETER)) {
             String loginHint = getParameter(request, runtimeParams, LOGIN_HINT_PARAMETER);
             context.setProperty(ORG_DISCOVERY_PARAMETER, loginHint);
@@ -466,13 +473,6 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             context.setProperty(ORG_DISCOVERY_PARAMETER, discoveryInput);
             if (!validateDiscoveryAttributeValue(discoveryInput, context, response)) {
                 context.removeProperty(ORG_DISCOVERY_PARAMETER);
-                return AuthenticatorFlowStatus.INCOMPLETE;
-            }
-        } else if (isParameterExists(request, runtimeParams, ORG_HANDLE_PARAMETER)) {
-            String organizationHandle = getParameter(request, runtimeParams, ORG_HANDLE_PARAMETER);
-            context.setProperty(ORG_HANDLE_PARAMETER, organizationHandle);
-            if (!validateOrganizationHandle(organizationHandle, context, response)) {
-                context.removeProperty(ORG_HANDLE_PARAMETER);
                 return AuthenticatorFlowStatus.INCOMPLETE;
             }
         } else if (isParameterExists(request, runtimeParams, ORG_PARAMETER)) {
