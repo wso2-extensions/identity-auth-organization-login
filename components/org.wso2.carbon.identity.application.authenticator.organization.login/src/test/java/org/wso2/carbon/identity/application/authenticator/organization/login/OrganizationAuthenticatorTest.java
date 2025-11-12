@@ -514,6 +514,7 @@ public class OrganizationAuthenticatorTest {
 
         when(spyContext.getTenantDomain()).thenReturn(saasAppOwnedTenant);
         when(spyContext.getServiceProviderName()).thenReturn(saasApp);
+        when(spyContext.getServiceProviderResourceId()).thenReturn(saasAppResourceId);
         when(spyContext.getAuthenticatorProperties()).thenReturn(authenticatorProperties);
         doReturn(saasAppOwnedTenant).when(spyContext).getLoginTenantDomain();
 
@@ -551,6 +552,11 @@ public class OrganizationAuthenticatorTest {
 
         when(authenticatorDataHolder.getOAuthAdminService().getOAuthApplicationData(anyString(), anyString()))
                 .thenReturn(mockOAuthConsumerAppDTO);
+        when(authenticatorDataHolder.getOrganizationManager()
+                .getRelativeDepthBetweenOrganizationsInSameBranch(orgId, saasAppOwnedOrgId)).thenReturn(1);
+        when(authenticatorDataHolder.getOrgApplicationManager()
+                .isApplicationSharedWithGivenOrganization(saasAppResourceId, saasAppOwnedOrgId, orgId)).thenReturn(
+                true);
 
         AuthenticatorFlowStatus status = organizationAuthenticator.process(mockServletRequest, mockServletResponse,
                 spyContext);
