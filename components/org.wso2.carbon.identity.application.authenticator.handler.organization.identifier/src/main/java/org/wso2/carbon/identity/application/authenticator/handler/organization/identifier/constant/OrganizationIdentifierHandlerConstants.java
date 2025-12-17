@@ -28,6 +28,7 @@ public class OrganizationIdentifierHandlerConstants {
     }
 
     public static final String AUTHENTICATOR_NAME = "OrganizationIdentifierHandler";
+    public static final String AUTHENTICATOR_ORGANIZATION_IDENTIFIER = "authenticator.organization.identifier";
     public static final String AUTHENTICATOR_FRIENDLY_NAME = "Organization SSO";
     public static final String CONTEXT_IDENTIFIER = "sessionDataKey";
 
@@ -47,4 +48,18 @@ public class OrganizationIdentifierHandlerConstants {
     public static final String ORG_DISCOVERY_PARAMETER = "orgDiscovery";
     public static final String PROMPT_PARAMETER = "prompt";
     public static final String ORGANIZATION_NAME_PROMPT_PARAMETER = "orgName";
+
+    public static final String DISPLAY_ORG_ID = "Organization Id";
+    public static final String DISPLAY_ORG_NAME = "Organization Name";
+    public static final String DISPLAY_ORG_HANDLE = "Organization Handle";
+    public static final String DISPLAY_LOGIN_HINT = "Login Hint";
+    public static final String DISPLAY_ORG_DISCOVERY_TYPE = "Organization Discovery Type";
+
+    public static final String I18N_ORG_ID = "organization.id.param";
+    public static final String I18N_ORG_NAME = "organization.name.param";
+    public static final String I18N_ORG_HANDLE = "organization.handle.param";
+    public static final String I18N_LOGIN_HINT = "login.hint.param";
+    public static final String I18N_ORG_DISCOVERY_TYPE = "organization.discovery.type.param";
+
+    public static final String AUTHENTICATOR_MESSAGE = "authenticatorMessage";
 }

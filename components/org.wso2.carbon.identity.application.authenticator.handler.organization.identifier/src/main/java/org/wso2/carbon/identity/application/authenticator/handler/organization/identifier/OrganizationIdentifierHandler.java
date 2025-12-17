@@ -30,10 +30,14 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatorData;
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatorMessage;
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatorParamMetadata;
 import org.wso2.carbon.identity.application.authentication.framework.model.OrganizationData;
 import org.wso2.carbon.identity.application.authentication.framework.model.OrganizationDiscoveryInput;
 import org.wso2.carbon.identity.application.authentication.framework.model.OrganizationDiscoveryResult;
 import org.wso2.carbon.identity.application.authentication.framework.model.OrganizationLoginData;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.OrgDiscoveryInputParameters;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants;
@@ -49,6 +53,7 @@ import org.wso2.carbon.identity.organization.discovery.service.AttributeBasedOrg
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,8 +63,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.SESSION_DATA_KEY;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.AMPERSAND_SIGN;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.AUTHENTICATOR_MESSAGE;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.AUTHENTICATOR_ORGANIZATION_IDENTIFIER;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.AUTHENTICATOR_PARAMETER;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.DISPLAY_LOGIN_HINT;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.DISPLAY_ORG_DISCOVERY_TYPE;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.DISPLAY_ORG_HANDLE;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.DISPLAY_ORG_ID;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.DISPLAY_ORG_NAME;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.EQUAL_SIGN;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_LOGIN_HINT;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_ORG_DISCOVERY_TYPE;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_ORG_HANDLE;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_ORG_ID;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_ORG_NAME;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORG_DISCOVERY_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORG_HANDLE_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORG_NAME_PARAMETER;
@@ -358,5 +375,76 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
     private String urlEncode(String value) throws UnsupportedEncodingException {
 
         return URLEncoder.encode(value, FrameworkUtils.UTF_8);
+    }
+
+    @Override
+    public String getI18nKey() {
+
+        return AUTHENTICATOR_ORGANIZATION_IDENTIFIER;
+    }
+
+    @Override
+    public Optional<AuthenticatorData> getAuthInitiationData(AuthenticationContext context) {
+
+        String idpName = null;
+        if (context != null && context.getExternalIdP() != null) {
+            idpName = context.getExternalIdP().getIdPName();
+        }
+
+        AuthenticatorData authenticatorData = new AuthenticatorData();
+        if (context.getProperty(AUTHENTICATOR_MESSAGE) != null) {
+            AuthenticatorMessage authenticatorMessage = (AuthenticatorMessage) context.getProperty
+                    (AUTHENTICATOR_MESSAGE);
+            authenticatorData.setMessage(authenticatorMessage);
+        }
+
+        authenticatorData.setName(getName());
+        authenticatorData.setI18nKey(getI18nKey());
+        authenticatorData.setIdp(idpName);
+        authenticatorData.setDisplayName(getFriendlyName());
+        authenticatorData.setPromptType(FrameworkConstants.AuthenticatorPromptType.USER_PROMPT);
+        setAuthParams(authenticatorData);
+
+        List<String> requiredParams = new ArrayList<>();
+        requiredParams.add(OrgDiscoveryInputParameters.ORG_ID);
+        requiredParams.add(OrgDiscoveryInputParameters.ORG_NAME);
+        requiredParams.add(OrgDiscoveryInputParameters.ORG_HANDLE);
+        requiredParams.add(OrgDiscoveryInputParameters.LOGIN_HINT);
+        requiredParams.add(OrgDiscoveryInputParameters.ORG_DISCOVERY_TYPE);
+        authenticatorData.setRequiredParams(requiredParams);
+
+        return Optional.of(authenticatorData);
+    }
+
+    private static void setAuthParams(AuthenticatorData authenticatorData) {
+
+        List<AuthenticatorParamMetadata> authenticatorParamMetadataList = new ArrayList<>();
+        AuthenticatorParamMetadata orgIdMetadata = new AuthenticatorParamMetadata(
+                OrgDiscoveryInputParameters.ORG_ID, DISPLAY_ORG_ID, FrameworkConstants.AuthenticatorParamType.STRING,
+                0, Boolean.FALSE, I18N_ORG_ID);
+        AuthenticatorParamMetadata orgNameMetadata = new AuthenticatorParamMetadata(
+                OrgDiscoveryInputParameters.ORG_NAME, DISPLAY_ORG_NAME,
+                FrameworkConstants.AuthenticatorParamType.STRING, 1, Boolean.FALSE, I18N_ORG_NAME);
+        AuthenticatorParamMetadata orgHandleMetadata = new AuthenticatorParamMetadata(
+                OrgDiscoveryInputParameters.ORG_HANDLE, DISPLAY_ORG_HANDLE,
+                FrameworkConstants.AuthenticatorParamType.STRING, 2, Boolean.FALSE, I18N_ORG_HANDLE);
+        AuthenticatorParamMetadata loginHintMetadata = new AuthenticatorParamMetadata(
+                OrgDiscoveryInputParameters.LOGIN_HINT, DISPLAY_LOGIN_HINT,
+                FrameworkConstants.AuthenticatorParamType.STRING, 3, Boolean.FALSE, I18N_LOGIN_HINT);
+        AuthenticatorParamMetadata orgDiscoveryTypeMetadata = new AuthenticatorParamMetadata(
+                OrgDiscoveryInputParameters.ORG_DISCOVERY_TYPE, DISPLAY_ORG_DISCOVERY_TYPE,
+                FrameworkConstants.AuthenticatorParamType.STRING, 4, Boolean.FALSE, I18N_ORG_DISCOVERY_TYPE);
+        authenticatorParamMetadataList.add(orgIdMetadata);
+        authenticatorParamMetadataList.add(orgNameMetadata);
+        authenticatorParamMetadataList.add(orgHandleMetadata);
+        authenticatorParamMetadataList.add(loginHintMetadata);
+        authenticatorParamMetadataList.add(orgDiscoveryTypeMetadata);
+        authenticatorData.setAuthParams(authenticatorParamMetadataList);
+    }
+
+    @Override
+    public boolean isAPIBasedAuthenticationSupported() {
+
+        return true;
     }
 }
