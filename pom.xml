@@ -186,12 +186,6 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-inline</artifactId>
-                <version>${mockito-core.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.wso2.carbon.identity.framework</groupId>
                 <artifactId>org.wso2.carbon.identity.testutil</artifactId>
                 <version>${carbon.identity.framework.version}</version>
@@ -374,7 +368,7 @@
         <equinox.osgi.stax-api.imp.pkg.version.range>[1.0.1,2.0.0)</equinox.osgi.stax-api.imp.pkg.version.range>
 
         <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
-        <maven.bundle.plugin.version>3.2.0</maven.bundle.plugin.version>
+        <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
 
         <jackson-jaxrs-json-provider.version>2.9.9</jackson-jaxrs-json-provider.version>
         <cxf-bundle.version>3.2.8</cxf-bundle.version>
@@ -420,8 +414,8 @@
 
         <encoder.wso2.version>1.2.0.wso2v1</encoder.wso2.version>
 
-        <mockito-core.version>4.6.1</mockito-core.version>
-        <jacoco.version>0.8.2</jacoco.version>
+        <mockito-core.version>5.14.2</mockito-core.version>
+        <jacoco.version>0.8.12</jacoco.version>
         <testng.version>7.10.1</testng.version>
         <maven.surefire.plugin.version>2.22.0</maven.surefire.plugin.version>
         <h2database.version>1.4.199</h2database.version>
@@ -437,8 +431,8 @@
         <carbon.p2.plugin.version>5.1.2</carbon.p2.plugin.version>
         <maven.buildnumber.plugin.version>1.4</maven.buildnumber.plugin.version>
 
-        <compiler-source.version>1.8</compiler-source.version>
-        <compiler-target.version>1.8</compiler-target.version>
+        <compiler-source.version>21</compiler-source.version>
+        <compiler-target.version>21</compiler-target.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <nimbusds.version>10.3.0.wso2v1</nimbusds.version>
         <nimbusds.osgi.version.range>[10.0.0,11.0.0)</nimbusds.osgi.version.range>
