@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.handler.organization.identifier;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -211,14 +212,16 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
         OrganizationData discoveredOrganization = new OrganizationData();
         discoveredOrganization.setId(orgDiscoveryResult.getDiscoveredOrganization().getId());
         discoveredOrganization.setName(orgDiscoveryResult.getDiscoveredOrganization().getName());
-        discoveredOrganization.setOrganizationHandle(
+        discoveredOrganization.setHandle(
                 orgDiscoveryResult.getDiscoveredOrganization().getOrganizationHandle());
         organizationLoginData.setAccessingOrganization(discoveredOrganization);
         organizationLoginData.setSharedApplicationId(orgDiscoveryResult.getSharedApplicationId());
         return organizationLoginData;
     }
 
-    private void redirectToOrgDiscoveryInputCapture(HttpServletRequest request, HttpServletResponse response, AuthenticationContext context)
+    @SuppressFBWarnings(value = "UNVALIDATED_REDIRECT", justification = "Redirect params are not based on user inputs.")
+    private void redirectToOrgDiscoveryInputCapture(HttpServletRequest request, HttpServletResponse response,
+                                                    AuthenticationContext context)
             throws AuthenticationFailedException {
 
         try {
@@ -392,7 +395,7 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
         }
 
         AuthenticatorData authenticatorData = new AuthenticatorData();
-        if (context.getProperty(AUTHENTICATOR_MESSAGE) != null) {
+        if (context != null && context.getProperty(AUTHENTICATOR_MESSAGE) != null) {
             AuthenticatorMessage authenticatorMessage = (AuthenticatorMessage) context.getProperty
                     (AUTHENTICATOR_MESSAGE);
             authenticatorData.setMessage(authenticatorMessage);
