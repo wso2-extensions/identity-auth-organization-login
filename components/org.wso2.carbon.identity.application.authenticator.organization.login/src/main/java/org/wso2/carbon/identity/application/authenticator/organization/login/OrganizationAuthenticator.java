@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2026, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -427,6 +427,12 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             throw handleAuthFailures(ERROR_CODE_ERROR_RESOLVING_THE_DEFAULT_DISCOVERY_PARAM, e);
         }
 
+        // Default discovery type is set to `emailDomain`.
+        String discoveryType = EMAIL_DOMAIN_DISCOVERY_TYPE;
+        if (isParameterExists(request, runtimeParams, ORG_DISCOVERY_TYPE_PARAMETER)) {
+            discoveryType = getParameter(request, runtimeParams, ORG_DISCOVERY_TYPE_PARAMETER);
+        }
+
         /**
          * First priority for organization Id.
          * Check for the organization Id in the request attribute first since the organization Id is set in the
@@ -446,10 +452,11 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
             if (StringUtils.isNotBlank(organizationName)) {
                 context.setProperty(ORG_PARAMETER, organizationName);
             }
-        } else if (isParameterExists(request, runtimeParams, LOGIN_HINT_PARAMETER)) {
+        } else if (isParameterExists(request, runtimeParams, LOGIN_HINT_PARAMETER) &&
+                isOrganizationDiscoveryTypeEnabled(discoveryType)) {
             String loginHint = getParameter(request, runtimeParams, LOGIN_HINT_PARAMETER);
             context.setProperty(ORG_DISCOVERY_PARAMETER, loginHint);
-            if (!validateLoginHintAttributeValue(loginHint, runtimeParams, context, request, response)) {
+            if (!validateLoginHintAttributeValue(loginHint, discoveryType, context, response)) {
                 context.removeProperty(ORG_DISCOVERY_PARAMETER);
                 return AuthenticatorFlowStatus.INCOMPLETE;
             }
@@ -624,28 +631,16 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
      * Validates given login_hint parameter.
      *
      * @param loginHintInput Given login_hint parameter value.
+     * @param discoveryType  Discovery type for organization lookup.
      * @param context        Authentication context.
-     * @param request        Servlet request.
      * @param response       Servlet response.
      * @return True if the login_hint parameter is valid.
      * @throws AuthenticationFailedException If an error occurs while validating login_hint parameter.
      */
-    private boolean validateLoginHintAttributeValue(String loginHintInput, Map<String, String> runtimeParams,
-                                                    AuthenticationContext context, HttpServletRequest request,
-                                                    HttpServletResponse response)
+    private boolean validateLoginHintAttributeValue(String loginHintInput, String discoveryType,
+                                                    AuthenticationContext context, HttpServletResponse response)
             throws AuthenticationFailedException {
 
-        // Default discovery type is set to `emailDomain`.
-        String discoveryType = EMAIL_DOMAIN_DISCOVERY_TYPE;
-        if (isParameterExists(request, runtimeParams, ORG_DISCOVERY_TYPE_PARAMETER)) {
-            discoveryType = getParameter(request, runtimeParams, ORG_DISCOVERY_TYPE_PARAMETER);
-        }
-
-        if (!isOrganizationDiscoveryTypeEnabled(discoveryType)) {
-            context.setProperty(ORGANIZATION_LOGIN_FAILURE, "invalid.organization.discovery.type");
-            redirectToOrgDiscoveryInputCapture(response, context);
-            return false;
-        }
         context.setProperty(ORGANIZATION_DISCOVERY_TYPE, discoveryType);
 
         try {
