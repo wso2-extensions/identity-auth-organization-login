@@ -443,7 +443,7 @@ public class OrganizationIdentifierHandlerTest {
                 .thenReturn(organizationDiscoveryResult);
         when(organizationDiscoveryResult.isSuccessful()).thenReturn(false);
 
-        OrganizationConfigException configException = new OrganizationConfigException("some other error", "ORG-60000");
+        OrganizationConfigException configException = new OrganizationConfigException("ORG-60000", "some other error");
         when(organizationConfigManager.getDiscoveryConfiguration()).thenThrow(configException);
         setupRedirectStubs("orgHandle");
         when(context.getTenantDomain()).thenReturn("test-tenant");

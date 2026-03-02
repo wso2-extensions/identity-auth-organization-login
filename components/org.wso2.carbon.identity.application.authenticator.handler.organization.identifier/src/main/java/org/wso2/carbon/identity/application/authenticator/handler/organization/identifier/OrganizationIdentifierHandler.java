@@ -216,11 +216,14 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
                     considerRuntimeParams).orElse(null);
             String loginHint = getParameter(request, context, OrgDiscoveryInputParameters.LOGIN_HINT,
                     considerRuntimeParams).orElse(null);
+            String orgDiscoveryType = getParameter(request, context, OrgDiscoveryInputParameters.ORG_DISCOVERY_TYPE,
+                    considerRuntimeParams).orElse(null);
             OrganizationDiscoveryInput orgDiscoveryInput = new OrganizationDiscoveryInput.Builder()
                     .orgId(orgId)
                     .orgHandle(orgHandle)
                     .orgName(orgName)
                     .loginHint(loginHint)
+                    .orgDiscoveryType(orgDiscoveryType)
                     .build();
 
             OrganizationDiscoveryResult orgDiscoveryResult = OrganizationIdentifierHandlerDataHolder.getInstance()
