@@ -71,4 +71,21 @@ public class OrganizationIdentifierHandlerConstants {
     public static final String INVALID_ORGANIZATION_DISCOVERY_TYPE_ERROR_KEY = "invalid.organization.discovery.type";
     public static final String ORGANIZATION_NOT_ASSOCIATED_WITH_APPLICATION_ERROR_KEY =
             "organization.not.associated.with.application";
+
+    /**
+     * Constants related to log management.
+     */
+    public static class LogConstants {
+
+        public static final String ORG_IDENTIFIER_HANDLER = "org-identifier-handler";
+
+        /**
+         * Define action IDs for diagnostic logs.
+         */
+        public static class ActionIDs {
+
+            public static final String INITIATE_ORG_DISCOVERY_REQUEST = "initiate-org-discovery-request";
+            public static final String PROCESS_ORG_DISCOVERY_RESPONSE = "process-org-discovery-response";
+        }
+    }
 }

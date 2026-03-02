@@ -43,6 +43,8 @@ import org.wso2.carbon.identity.application.authentication.framework.util.Framew
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants;
 import org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.internal.OrganizationIdentifierHandlerDataHolder;
+import org.wso2.carbon.identity.central.log.mgt.utils.LogConstants;
+import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.organization.config.service.exception.OrganizationConfigException;
@@ -51,11 +53,13 @@ import org.wso2.carbon.identity.organization.config.service.model.DiscoveryConfi
 import org.wso2.carbon.identity.organization.config.service.util.OrganizationConfigManagerUtil;
 import org.wso2.carbon.identity.organization.discovery.service.AttributeBasedOrganizationDiscoveryHandler;
 import org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants;
+import org.wso2.carbon.utils.DiagnosticLog;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -84,6 +88,9 @@ import static org.wso2.carbon.identity.application.authenticator.handler.organiz
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.INVALID_ORGANIZATION_ERROR_KEY;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.INVALID_ORGANIZATION_HANDLE_ERROR_KEY;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.INVALID_ORGANIZATION_NAME_ERROR_KEY;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.LogConstants.ActionIDs.INITIATE_ORG_DISCOVERY_REQUEST;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.LogConstants.ActionIDs.PROCESS_ORG_DISCOVERY_RESPONSE;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.LogConstants.ORG_IDENTIFIER_HANDLER;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORGANIZATION_DISCOVERY_FAILURE_GENERIC_ERROR_KEY;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORGANIZATION_LOGIN_FAILURE;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORGANIZATION_NOT_ASSOCIATED_WITH_APPLICATION_ERROR_KEY;
@@ -148,6 +155,18 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
         if (context.isLogoutRequest()) {
             return super.process(request, response, context);
         }
+
+        if (LoggerUtils.isDiagnosticLogsEnabled()) {
+            DiagnosticLog.DiagnosticLogBuilder diagnosticLogBuilder = new DiagnosticLog.DiagnosticLogBuilder(
+                    ORG_IDENTIFIER_HANDLER, INITIATE_ORG_DISCOVERY_REQUEST);
+            diagnosticLogBuilder.resultMessage("Initiating organization discovery request.")
+                    .logDetailLevel(DiagnosticLog.LogDetailLevel.APPLICATION)
+                    .resultStatus(DiagnosticLog.ResultStatus.SUCCESS)
+                    .inputParam(LogConstants.InputKeys.STEP, context.getCurrentStep())
+                    .inputParams(getApplicationDetails(context));
+            LoggerUtils.triggerDiagnosticLogEvent(diagnosticLogBuilder);
+        }
+
         // Handling the organization discovery if any of the org identifier parameters are present.
         if (getParameter(request, context, OrgDiscoveryInputParameters.ORG_ID, true).isPresent()
                 || getParameter(request, context, OrgDiscoveryInputParameters.ORG_HANDLE, true).isPresent()
@@ -210,6 +229,16 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
             if (orgDiscoveryResult.isSuccessful()) {
                 OrganizationLoginData organizationLoginData = getOrganizationLoginData(orgDiscoveryResult);
                 context.setOrganizationLoginData(organizationLoginData);
+                if (LoggerUtils.isDiagnosticLogsEnabled()) {
+                    DiagnosticLog.DiagnosticLogBuilder diagnosticLogBuilder = new DiagnosticLog.DiagnosticLogBuilder(
+                            ORG_IDENTIFIER_HANDLER, PROCESS_ORG_DISCOVERY_RESPONSE);
+                    diagnosticLogBuilder.resultMessage("Organization discovery completed successfully.")
+                            .logDetailLevel(DiagnosticLog.LogDetailLevel.APPLICATION)
+                            .resultStatus(DiagnosticLog.ResultStatus.SUCCESS)
+                            .inputParam(LogConstants.InputKeys.STEP, context.getCurrentStep())
+                            .inputParams(getApplicationDetails(context));
+                    LoggerUtils.triggerDiagnosticLogEvent(diagnosticLogBuilder);
+                }
                 return true;
             }
 
@@ -223,6 +252,16 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
             context.setProperty(ORGANIZATION_LOGIN_FAILURE, failureErrorKey);
             context.setProperty(AUTHENTICATOR_MESSAGE, new AuthenticatorMessage(
                     FrameworkConstants.AuthenticatorMessageType.ERROR, failureErrorKey, null));
+            if (LoggerUtils.isDiagnosticLogsEnabled()) {
+                DiagnosticLog.DiagnosticLogBuilder diagnosticLogBuilder = new DiagnosticLog.DiagnosticLogBuilder(
+                        ORG_IDENTIFIER_HANDLER, PROCESS_ORG_DISCOVERY_RESPONSE);
+                diagnosticLogBuilder.resultMessage("Organization discovery failed.")
+                        .logDetailLevel(DiagnosticLog.LogDetailLevel.APPLICATION)
+                        .resultStatus(DiagnosticLog.ResultStatus.FAILED)
+                        .inputParam(LogConstants.InputKeys.STEP, context.getCurrentStep())
+                        .inputParams(getApplicationDetails(context));
+                LoggerUtils.triggerDiagnosticLogEvent(diagnosticLogBuilder);
+            }
         } catch (FrameworkException e) {
             throw handleAuthFailures(e.getMessage(), e);
         }
@@ -501,6 +540,16 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
             return INVALID_ORGANIZATION_ERROR_KEY;
         }
         return ORGANIZATION_DISCOVERY_FAILURE_GENERIC_ERROR_KEY;
+    }
+
+    private Map<String, String> getApplicationDetails(AuthenticationContext context) {
+
+        Map<String, String> applicationDetailsMap = new HashMap<>();
+        FrameworkUtils.getApplicationResourceId(context).ifPresent(applicationId ->
+                applicationDetailsMap.put(LogConstants.InputKeys.APPLICATION_ID, applicationId));
+        FrameworkUtils.getApplicationName(context).ifPresent(applicationName ->
+                applicationDetailsMap.put(LogConstants.InputKeys.APPLICATION_NAME, applicationName));
+        return applicationDetailsMap;
     }
 
     private AuthenticationFailedException handleAuthFailures(OrganizationManagementConstants.ErrorMessages error,

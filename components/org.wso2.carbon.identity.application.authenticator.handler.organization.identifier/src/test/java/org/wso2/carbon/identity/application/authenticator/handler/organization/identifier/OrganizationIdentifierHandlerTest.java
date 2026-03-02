@@ -41,6 +41,7 @@ import org.wso2.carbon.identity.application.authentication.framework.model.Organ
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.internal.OrganizationIdentifierHandlerDataHolder;
+import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.ServiceURL;
 import org.wso2.carbon.identity.core.ServiceURLBuilder;
 import org.wso2.carbon.identity.organization.config.service.OrganizationConfigManager;
@@ -116,6 +117,7 @@ public class OrganizationIdentifierHandlerTest {
     private MockedStatic<ServiceURLBuilder> serviceURLBuilderStatic;
     private MockedStatic<FrameworkUtils> frameworkUtilsStatic;
     private MockedStatic<OrganizationConfigManagerUtil> organizationConfigManagerUtilStatic;
+    private MockedStatic<LoggerUtils> loggerUtilsStatic;
 
     private OrganizationIdentifierHandler organizationIdentifierHandler;
 
@@ -127,6 +129,8 @@ public class OrganizationIdentifierHandlerTest {
         serviceURLBuilderStatic = mockStatic(ServiceURLBuilder.class);
         frameworkUtilsStatic = mockStatic(FrameworkUtils.class);
         organizationConfigManagerUtilStatic = mockStatic(OrganizationConfigManagerUtil.class);
+        loggerUtilsStatic = mockStatic(LoggerUtils.class);
+        loggerUtilsStatic.when(LoggerUtils::isDiagnosticLogsEnabled).thenReturn(false);
 
         organizationIdentifierHandlerDataHolderStatic.when(OrganizationIdentifierHandlerDataHolder::getInstance)
                 .thenReturn(dataHolder);
@@ -144,6 +148,7 @@ public class OrganizationIdentifierHandlerTest {
     @AfterMethod
     public void tearDown() throws Exception {
 
+        loggerUtilsStatic.close();
         organizationConfigManagerUtilStatic.close();
         frameworkUtilsStatic.close();
         serviceURLBuilderStatic.close();
