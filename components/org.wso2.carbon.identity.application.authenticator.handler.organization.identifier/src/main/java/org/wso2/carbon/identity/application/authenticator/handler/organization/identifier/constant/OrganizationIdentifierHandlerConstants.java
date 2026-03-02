@@ -62,4 +62,13 @@ public class OrganizationIdentifierHandlerConstants {
     public static final String I18N_ORG_DISCOVERY_TYPE = "organization.discovery.type.param";
 
     public static final String AUTHENTICATOR_MESSAGE = "authenticatorMessage";
+    public static final String ORGANIZATION_LOGIN_FAILURE = "organizationLoginFailure";
+    public static final String ERROR_MESSAGE = "&authFailure=true&authFailureMsg=";
+    public static final String ORGANIZATION_DISCOVERY_FAILURE_GENERIC_ERROR_KEY = "organization.discovery.failure";
+    public static final String INVALID_ORGANIZATION_HANDLE_ERROR_KEY = "invalid.organization.handle";
+    public static final String INVALID_ORGANIZATION_NAME_ERROR_KEY = "invalid.organization.name";
+    public static final String INVALID_ORGANIZATION_ERROR_KEY = "invalid.organization";
+    public static final String INVALID_ORGANIZATION_DISCOVERY_TYPE_ERROR_KEY = "invalid.organization.discovery.type";
+    public static final String ORGANIZATION_NOT_ASSOCIATED_WITH_APPLICATION_ERROR_KEY =
+            "organization.not.associated.with.application";
 }

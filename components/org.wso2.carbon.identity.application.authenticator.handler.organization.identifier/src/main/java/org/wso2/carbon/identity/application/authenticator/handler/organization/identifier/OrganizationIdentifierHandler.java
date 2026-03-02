@@ -50,6 +50,7 @@ import org.wso2.carbon.identity.organization.config.service.model.ConfigProperty
 import org.wso2.carbon.identity.organization.config.service.model.DiscoveryConfig;
 import org.wso2.carbon.identity.organization.config.service.util.OrganizationConfigManagerUtil;
 import org.wso2.carbon.identity.organization.discovery.service.AttributeBasedOrganizationDiscoveryHandler;
+import org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -73,11 +74,19 @@ import static org.wso2.carbon.identity.application.authenticator.handler.organiz
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.DISPLAY_ORG_ID;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.DISPLAY_ORG_NAME;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.EQUAL_SIGN;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ERROR_MESSAGE;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_LOGIN_HINT;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_ORG_DISCOVERY_TYPE;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_ORG_HANDLE;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_ORG_ID;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.I18N_ORG_NAME;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.INVALID_ORGANIZATION_DISCOVERY_TYPE_ERROR_KEY;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.INVALID_ORGANIZATION_ERROR_KEY;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.INVALID_ORGANIZATION_HANDLE_ERROR_KEY;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.INVALID_ORGANIZATION_NAME_ERROR_KEY;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORGANIZATION_DISCOVERY_FAILURE_GENERIC_ERROR_KEY;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORGANIZATION_LOGIN_FAILURE;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORGANIZATION_NOT_ASSOCIATED_WITH_APPLICATION_ERROR_KEY;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORG_DISCOVERY_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORG_HANDLE_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORG_NAME_PARAMETER;
@@ -90,6 +99,9 @@ import static org.wso2.carbon.identity.application.authenticator.handler.organiz
 import static org.wso2.carbon.identity.organization.config.service.constant.OrganizationConfigConstants.DEFAULT_PARAM;
 import static org.wso2.carbon.identity.organization.config.service.constant.OrganizationConfigConstants.ErrorMessages.ERROR_CODE_DISCOVERY_CONFIG_NOT_EXIST;
 import static org.wso2.carbon.identity.organization.discovery.service.constant.DiscoveryConstants.ENABLE_CONFIG;
+import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_GETTING_ORGANIZATION_DISCOVERY_CONFIG;
+import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_REQUEST_ORGANIZATION_REDIRECT;
+import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_ERROR_RESOLVING_THE_DEFAULT_DISCOVERY_PARAM;
 
 /**
  * This class acts as Organization Identifier Handler.
@@ -146,6 +158,8 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
             if (orgDiscoverySuccessful) {
                 return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
             }
+            initiateAuthenticationRequest(request, response, context);
+            return AuthenticatorFlowStatus.INCOMPLETE;
         }
         return super.process(request, response, context);
     }
@@ -166,8 +180,7 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
         // At this point, we only need to consider the request parameters for organization discovery.
         boolean orgDiscoverySuccessful = handleOrganizationDiscovery(request, response, context, false);
         if (!orgDiscoverySuccessful) {
-            throw new AuthenticationFailedException(
-                    "Organization discovery failed. Cannot proceed with authentication.");
+            redirectToOrgDiscoveryInputCapture(request, response, context);
         }
     }
 
@@ -199,9 +212,19 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
                 context.setOrganizationLoginData(organizationLoginData);
                 return true;
             }
+
+            // Handle the failure scenario and set the relevant error messages.
+            OrganizationDiscoveryResult.FailureDetails failureDetails = orgDiscoveryResult.getFailureDetails();
+            if (log.isDebugEnabled()) {
+                log.debug("Organization discovery failed." + (failureDetails != null ?
+                        " Code: " + failureDetails.getCode() + ", Message: " + failureDetails.getMessage() : ""));
+            }
+            String failureErrorKey = resolveDiscoveryFailureErrorKey(orgDiscoveryInput, failureDetails);
+            context.setProperty(ORGANIZATION_LOGIN_FAILURE, failureErrorKey);
+            context.setProperty(AUTHENTICATOR_MESSAGE, new AuthenticatorMessage(
+                    FrameworkConstants.AuthenticatorMessageType.ERROR, failureErrorKey, null));
         } catch (FrameworkException e) {
-            throw new AuthenticationFailedException(
-                    "Organization discovery failed. Cannot proceed with authentication.");
+            throw handleAuthFailures(e.getMessage(), e);
         }
         return false;
     }
@@ -233,15 +256,18 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
             addQueryParam(queryStringBuilder, AUTHENTICATOR_PARAMETER, getName());
             addQueryParam(queryStringBuilder, SP_ID_PARAMETER, context.getServiceProviderResourceId());
             addQueryParam(queryStringBuilder, DEFAULT_PARAM, discoveryDefaultParam);
+            if (context.getProperty(ORGANIZATION_LOGIN_FAILURE) != null) {
+                queryStringBuilder.append(ERROR_MESSAGE)
+                        .append(urlEncode((String) context.getProperty(ORGANIZATION_LOGIN_FAILURE)));
+            }
 
             String baseUrl = resolveBaseRedirectUrl(request, context, discoveryDefaultParam);
             String redirectUrl = FrameworkUtils.appendQueryParamsStringToUrl(baseUrl, queryStringBuilder.toString());
             response.sendRedirect(redirectUrl);
         } catch (IOException | URLBuilderException e) {
-            throw new AuthenticationFailedException(
-                    "Error while redirecting to organization discovery input capture page.");
+            throw handleAuthFailures(ERROR_CODE_ERROR_REQUEST_ORGANIZATION_REDIRECT, e);
         } catch (OrganizationConfigException e) {
-            throw new AuthenticationFailedException("Error while resolving the default discovery parameter.");
+            throw handleAuthFailures(ERROR_CODE_ERROR_RESOLVING_THE_DEFAULT_DISCOVERY_PARAM, e);
         }
     }
 
@@ -309,7 +335,7 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
             if (ERROR_CODE_DISCOVERY_CONFIG_NOT_EXIST.getCode().equals(e.getErrorCode())) {
                 return false;
             }
-            throw new AuthenticationFailedException("Error while checking organization discovery configuration.");
+            throw handleAuthFailures(ERROR_CODE_ERROR_GETTING_ORGANIZATION_DISCOVERY_CONFIG, e);
         }
         return false;
     }
@@ -449,5 +475,48 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
     public boolean isAPIBasedAuthenticationSupported() {
 
         return true;
+    }
+
+    private String resolveDiscoveryFailureErrorKey(OrganizationDiscoveryInput orgDiscoveryInput,
+                                                   OrganizationDiscoveryResult.FailureDetails failureDetails) {
+
+        if (failureDetails == null) {
+            return ORGANIZATION_DISCOVERY_FAILURE_GENERIC_ERROR_KEY;
+        }
+        String code = failureDetails.getCode();
+        if (FrameworkConstants.OrgDiscoveryFailureDetails.APPLICATION_NOT_SHARED.getCode().equals(code)) {
+            return ORGANIZATION_NOT_ASSOCIATED_WITH_APPLICATION_ERROR_KEY;
+        }
+        if (FrameworkConstants.OrgDiscoveryFailureDetails.ORGANIZATION_DISCOVERY_TYPE_NOT_ENABLED_OR_SUPPORTED
+                .getCode().equals(code)) {
+            return INVALID_ORGANIZATION_DISCOVERY_TYPE_ERROR_KEY;
+        }
+        if (FrameworkConstants.OrgDiscoveryFailureDetails.ORGANIZATION_NOT_FOUND.getCode().equals(code)) {
+            if (StringUtils.isNotBlank(orgDiscoveryInput.getOrgHandle())) {
+                return INVALID_ORGANIZATION_HANDLE_ERROR_KEY;
+            }
+            if (StringUtils.isNotBlank(orgDiscoveryInput.getOrgName())) {
+                return INVALID_ORGANIZATION_NAME_ERROR_KEY;
+            }
+            return INVALID_ORGANIZATION_ERROR_KEY;
+        }
+        return ORGANIZATION_DISCOVERY_FAILURE_GENERIC_ERROR_KEY;
+    }
+
+    private AuthenticationFailedException handleAuthFailures(OrganizationManagementConstants.ErrorMessages error,
+                                                             Throwable e) {
+
+        if (log.isDebugEnabled()) {
+            log.debug(error.getMessage());
+        }
+        return new AuthenticationFailedException(error.getCode(), error.getMessage(), e);
+    }
+
+    private AuthenticationFailedException handleAuthFailures(String errorMessage, Throwable e) {
+
+        if (log.isDebugEnabled()) {
+            log.debug(errorMessage);
+        }
+        return new AuthenticationFailedException(errorMessage, e);
     }
 }

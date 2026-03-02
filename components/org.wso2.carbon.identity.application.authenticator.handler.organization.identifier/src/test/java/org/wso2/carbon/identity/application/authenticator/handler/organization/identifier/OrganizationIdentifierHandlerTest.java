@@ -64,6 +64,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -71,6 +72,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.AUTHENTICATOR_MESSAGE;
+import static org.wso2.carbon.identity.application.authenticator.handler.organization.identifier.constant.OrganizationIdentifierHandlerConstants.ORGANIZATION_LOGIN_FAILURE;
 import static org.wso2.carbon.identity.organization.config.service.constant.OrganizationConfigConstants.ErrorMessages.ERROR_CODE_DISCOVERY_CONFIG_NOT_EXIST;
 import static org.wso2.carbon.identity.organization.discovery.service.constant.DiscoveryConstants.ENABLE_CONFIG;
 
@@ -250,15 +252,20 @@ public class OrganizationIdentifierHandlerTest {
         when(organizationDiscoveryHandler.discoverOrganization(any(OrganizationDiscoveryInput.class), any()))
                 .thenReturn(organizationDiscoveryResult);
         when(organizationDiscoveryResult.isSuccessful()).thenReturn(false);
+        when(organizationDiscoveryResult.getFailureDetails()).thenReturn(
+                new OrganizationDiscoveryResult.FailureDetails("60002", "Organization not found."));
         setupRedirectStubs("orgHandle");
         setupDiscoveryDisabled();
         when(context.getTenantDomain()).thenReturn("test-tenant");
+        when(context.getProperty(ORGANIZATION_LOGIN_FAILURE)).thenReturn(null);
         frameworkUtilsStatic.when(() -> FrameworkUtils.appendQueryParamsStringToUrl(anyString(), anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0) + "?" + invocation.getArgument(1));
 
         AuthenticatorFlowStatus status = organizationIdentifierHandler.process(request, response, context);
 
         Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
+        verify(context).setProperty(eq(ORGANIZATION_LOGIN_FAILURE), anyString());
+        verify(context).setProperty(eq(AUTHENTICATOR_MESSAGE), any(AuthenticatorMessage.class));
     }
 
     @Test(expectedExceptions = AuthenticationFailedException.class)
@@ -291,15 +298,27 @@ public class OrganizationIdentifierHandlerTest {
         verify(context).setOrganizationLoginData(any());
     }
 
-    @Test(expectedExceptions = AuthenticationFailedException.class)
+    @Test
     public void testProcessAuthenticationResponseFailure() throws Exception {
 
         when(request.getParameterMap()).thenReturn(new HashMap<>());
         when(organizationDiscoveryHandler.discoverOrganization(any(OrganizationDiscoveryInput.class), any()))
                 .thenReturn(organizationDiscoveryResult);
         when(organizationDiscoveryResult.isSuccessful()).thenReturn(false);
+        when(organizationDiscoveryResult.getFailureDetails()).thenReturn(
+                new OrganizationDiscoveryResult.FailureDetails("60002", "Organization not found."));
+        setupRedirectStubs("orgHandle");
+        setupDiscoveryDisabled();
+        when(context.getTenantDomain()).thenReturn("test-tenant");
+        when(context.getProperty(ORGANIZATION_LOGIN_FAILURE)).thenReturn(null);
+        frameworkUtilsStatic.when(() -> FrameworkUtils.appendQueryParamsStringToUrl(anyString(), anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0) + "?" + invocation.getArgument(1));
 
         organizationIdentifierHandler.processAuthenticationResponse(request, response, context);
+
+        verify(response).sendRedirect(anyString());
+        verify(context).setProperty(eq(ORGANIZATION_LOGIN_FAILURE), anyString());
+        verify(context).setProperty(eq(AUTHENTICATOR_MESSAGE), any(AuthenticatorMessage.class));
     }
 
     @DataProvider(name = "redirectUrlDataProvider")
@@ -385,6 +404,8 @@ public class OrganizationIdentifierHandlerTest {
         when(organizationDiscoveryHandler.discoverOrganization(any(OrganizationDiscoveryInput.class), any()))
                 .thenReturn(organizationDiscoveryResult);
         when(organizationDiscoveryResult.isSuccessful()).thenReturn(false);
+        when(organizationDiscoveryResult.getFailureDetails()).thenReturn(
+                new OrganizationDiscoveryResult.FailureDetails("60002", "Organization not found."));
 
         OrganizationConfigException configException = new OrganizationConfigException(
                 ERROR_CODE_DISCOVERY_CONFIG_NOT_EXIST.getCode(),
@@ -392,6 +413,7 @@ public class OrganizationIdentifierHandlerTest {
         when(organizationConfigManager.getDiscoveryConfiguration()).thenThrow(configException);
         setupRedirectStubs("orgHandle");
         when(context.getTenantDomain()).thenReturn("test-tenant");
+        when(context.getProperty(ORGANIZATION_LOGIN_FAILURE)).thenReturn(null);
         frameworkUtilsStatic.when(() -> FrameworkUtils.appendQueryParamsStringToUrl(anyString(), anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0) + "?" + invocation.getArgument(1));
 
