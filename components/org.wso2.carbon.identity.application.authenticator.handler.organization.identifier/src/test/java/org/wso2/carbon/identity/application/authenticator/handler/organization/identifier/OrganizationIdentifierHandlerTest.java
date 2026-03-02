@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.handler.organization.identifier;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -367,9 +368,13 @@ public class OrganizationIdentifierHandlerTest {
         frameworkUtilsStatic.when(() -> FrameworkUtils.appendQueryParamsStringToUrl(anyString(), anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0) + "?" + invocation.getArgument(1));
 
+        ArgumentCaptor<String> redirectUrlCaptor = ArgumentCaptor.forClass(String.class);
         organizationIdentifierHandler.initiateAuthenticationRequest(request, response, context);
 
-        verify(response).sendRedirect(anyString());
+        verify(response).sendRedirect(redirectUrlCaptor.capture());
+        String capturedUrl = redirectUrlCaptor.getValue();
+        Assert.assertTrue(capturedUrl.contains(expectedUrlPath),
+                "Expected redirect URL to contain '" + expectedUrlPath + "' but was: " + capturedUrl);
     }
 
     @Test(expectedExceptions = AuthenticationFailedException.class)

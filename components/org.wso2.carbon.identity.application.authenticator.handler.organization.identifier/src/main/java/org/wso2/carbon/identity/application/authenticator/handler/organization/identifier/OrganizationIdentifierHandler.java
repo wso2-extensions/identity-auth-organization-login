@@ -109,7 +109,7 @@ import static org.wso2.carbon.identity.organization.management.service.constant.
 public class OrganizationIdentifierHandler extends AbstractApplicationAuthenticator implements
         AuthenticationFlowHandler {
 
-    private static final Log log = LogFactory.getLog(OrganizationIdentifierHandler.class);
+    private static final Log LOG = LogFactory.getLog(OrganizationIdentifierHandler.class);
 
     @Override
     public String getName() {
@@ -215,8 +215,8 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
 
             // Handle the failure scenario and set the relevant error messages.
             OrganizationDiscoveryResult.FailureDetails failureDetails = orgDiscoveryResult.getFailureDetails();
-            if (log.isDebugEnabled()) {
-                log.debug("Organization discovery failed." + (failureDetails != null ?
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Organization discovery failed." + (failureDetails != null ?
                         " Code: " + failureDetails.getCode() + ", Message: " + failureDetails.getMessage() : ""));
             }
             String failureErrorKey = resolveDiscoveryFailureErrorKey(orgDiscoveryInput, failureDetails);
@@ -322,11 +322,11 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
             DiscoveryConfig discoveryConfig = OrganizationIdentifierHandlerDataHolder.getInstance()
                     .getOrganizationConfigManager().getDiscoveryConfiguration();
             List<ConfigProperty> configProperties = discoveryConfig.getConfigProperties();
+            Map<String, AttributeBasedOrganizationDiscoveryHandler> discoveryHandlers =
+                    OrganizationIdentifierHandlerDataHolder.getInstance().getOrganizationDiscoveryManager()
+                            .getAttributeBasedOrganizationDiscoveryHandlers();
             for (ConfigProperty configProperty : configProperties) {
                 String type = configProperty.getKey().split(ENABLE_CONFIG)[0];
-                Map<String, AttributeBasedOrganizationDiscoveryHandler> discoveryHandlers =
-                        OrganizationIdentifierHandlerDataHolder.getInstance().getOrganizationDiscoveryManager()
-                                .getAttributeBasedOrganizationDiscoveryHandlers();
                 if (discoveryHandlers.get(type) != null && Boolean.parseBoolean(configProperty.getValue())) {
                     return true;
                 }
@@ -506,16 +506,16 @@ public class OrganizationIdentifierHandler extends AbstractApplicationAuthentica
     private AuthenticationFailedException handleAuthFailures(OrganizationManagementConstants.ErrorMessages error,
                                                              Throwable e) {
 
-        if (log.isDebugEnabled()) {
-            log.debug(error.getMessage());
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(error.getMessage());
         }
         return new AuthenticationFailedException(error.getCode(), error.getMessage(), e);
     }
 
     private AuthenticationFailedException handleAuthFailures(String errorMessage, Throwable e) {
 
-        if (log.isDebugEnabled()) {
-            log.debug(errorMessage);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(errorMessage);
         }
         return new AuthenticationFailedException(errorMessage, e);
     }

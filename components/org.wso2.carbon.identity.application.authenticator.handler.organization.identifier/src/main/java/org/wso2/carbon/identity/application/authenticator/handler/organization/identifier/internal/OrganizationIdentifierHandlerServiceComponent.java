@@ -42,20 +42,20 @@ import org.wso2.carbon.identity.organization.discovery.service.OrganizationDisco
 )
 public class OrganizationIdentifierHandlerServiceComponent {
 
-    private static final Log log = LogFactory.getLog(OrganizationIdentifierHandlerServiceComponent.class.getName());
+    private static final Log LOG = LogFactory.getLog(OrganizationIdentifierHandlerServiceComponent.class.getName());
 
     @Activate
     protected void activate(ComponentContext ctx) {
 
         ctx.getBundleContext().registerService(ApplicationAuthenticator.class.getName(),
                 new OrganizationIdentifierHandler(), null);
-        log.debug("Organization Identifier Handler is activated.");
+        LOG.debug("Organization Identifier Handler is activated.");
     }
 
     @Deactivate
     protected void deactivate(ComponentContext ctx) {
 
-        log.debug("Organization Identifier Handler is deactivated.");
+        LOG.debug("Organization Identifier Handler is deactivated.");
     }
 
     /**
@@ -74,7 +74,7 @@ public class OrganizationIdentifierHandlerServiceComponent {
 
         OrganizationIdentifierHandlerDataHolder.getInstance()
                 .setOrganizationDiscoveryHandler(organizationDiscoveryHandler);
-        log.debug("Organization discovery handler is set in organization identifier handler component.");
+        LOG.debug("Organization discovery handler is set in organization identifier handler component.");
     }
 
     /**
@@ -85,7 +85,7 @@ public class OrganizationIdentifierHandlerServiceComponent {
     protected void unsetOrganizationDiscovererHandler(OrganizationDiscoveryHandler organizationDiscoveryHandler) {
 
         OrganizationIdentifierHandlerDataHolder.getInstance().setOrganizationDiscoveryHandler(null);
-        log.debug("Organization discovery handler is unset in organization identifier handler component.");
+        LOG.debug("Organization discovery handler is unset in organization identifier handler component.");
     }
 
     @Reference(name = "identity.organization.config.management.component",
