@@ -225,6 +225,7 @@
                             com.nimbusds.jose.*; version="${nimbusds.osgi.version.range}",
                             net.minidev.json; version="${net.minidev.json.imp.pkg.version.range}",
                         </Import-Package>
+                        <_contract>!*</_contract>
                     </instructions>
                 </configuration>
             </plugin>

@@ -41,6 +41,7 @@
 
     <modules>
         <module>components/org.wso2.carbon.identity.application.authenticator.organization.login</module>
+        <module>components/org.wso2.carbon.identity.application.authenticator.handler.organization.identifier</module>
         <module>features/org.wso2.carbon.identity.auth.organization.login.server.feature</module>
     </modules>
 
@@ -387,7 +388,7 @@
         <carbon.multitenancy.package.import.version.range>[4.7.0,5.0.0)
         </carbon.multitenancy.package.import.version.range>
 
-        <carbon.identity.framework.version>7.8.254</carbon.identity.framework.version>
+        <carbon.identity.framework.version>7.10.36</carbon.identity.framework.version>
         <carbon.identity.package.import.version.range>[5.20.0, 8.0.0)
         </carbon.identity.package.import.version.range>
 
