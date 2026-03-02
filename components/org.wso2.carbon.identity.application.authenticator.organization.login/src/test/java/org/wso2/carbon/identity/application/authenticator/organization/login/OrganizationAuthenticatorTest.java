@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2022-2026, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -79,6 +79,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -103,6 +104,7 @@ import static org.wso2.carbon.identity.application.authenticator.organization.lo
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_HANDLE_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_ID_PARAMETER;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.ORG_PARAMETER;
+import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.REQUEST_ORG_HANDLE_PAGE_URL;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SAML_RESP;
 import static org.wso2.carbon.identity.application.authenticator.organization.login.constant.AuthenticatorConstants.SELF_REGISTRATION_PARAMETER;
 import static org.wso2.carbon.identity.organization.management.service.constant.OrganizationManagementConstants.ErrorMessages.ERROR_CODE_APPLICATION_NOT_SHARED;
@@ -165,6 +167,7 @@ public class OrganizationAuthenticatorTest {
     private static Map<String, String> authenticatorProperties;
     private static Map<String, Object> mockContextParam;
 
+    private Map<String, String[]> mockParameterMap;
     private HttpServletRequest mockServletRequest;
     private HttpServletResponse mockServletResponse;
     private AuthenticationContext mockAuthenticationContext;
@@ -213,6 +216,7 @@ public class OrganizationAuthenticatorTest {
     public void init() throws UserStoreException {
 
         initMocks(this);
+        mockParameterMap = new HashMap<>();
         mockServletRequest = mock(HttpServletRequest.class);
         mockServletResponse = mock(HttpServletResponse.class);
         mockAuthenticationContext = mock(AuthenticationContext.class);
@@ -909,6 +913,43 @@ public class OrganizationAuthenticatorTest {
         }
     }
 
+    @Test
+    public void testProcessWithLoginHintAndOrgHandleParam() throws Exception {
+
+        setupMockParam(ORG_HANDLE_PARAMETER, orgHandle);
+        setupMockParam(LOGIN_HINT_PARAMETER, userEmailWithValidDomain);
+
+        when(authenticatorDataHolder.getOrganizationConfigManager().getDiscoveryConfiguration())
+                .thenReturn(mockDiscoveryConfig);
+        List<ConfigProperty> configProperties = new ArrayList<>();
+        configProperties.add(new ConfigProperty(emailDomainDiscoveryType + ENABLE_CONFIG, String.valueOf(false)));
+        when(mockDiscoveryConfig.getConfigProperties()).thenReturn(configProperties);
+
+        when(authenticatorDataHolder.getOrganizationManager().resolveOrganizationId(orgHandle)).thenReturn(orgId);
+        when(authenticatorDataHolder.getOrganizationManager().getOrganizationNameById(orgId)).thenReturn(org);
+        when(mockOrganizationManager.getOrganizationsByName(org))
+                .thenReturn(Collections.singletonList(mockOrganization));
+        when(mockApplicationManagementService.getServiceProvider(any(), any())).thenReturn(mockServiceProvider);
+        when(mockOrgApplicationManager.getApplicationSharedOrganizations(any(), any())).
+                thenReturn(Arrays.asList(mockBasicOrganization, mockBasicOrganization));
+        when(authenticatorDataHolder.getOrgApplicationManager()
+                .isApplicationSharedWithGivenOrganization(any(), any(), any())).thenReturn(true);
+        when(mockAuthenticationContext.getContextIdentifier()).thenReturn(contextIdentifier);
+        when(mockAuthenticationContext.getExternalIdP()).thenReturn(mockExternalIdPConfig);
+        when(mockAuthenticationContext.getServiceProviderResourceId()).thenReturn(saasAppResourceId);
+        when(mockExternalIdPConfig.getName()).thenReturn(AUTHENTICATOR_FRIENDLY_NAME);
+        mockedOrganizationConfigManagerUtil.when(OrganizationConfigManagerUtil::resolveDefaultDiscoveryParam)
+                .thenReturn(ORG_HANDLE_PARAMETER);
+
+        AuthenticatorFlowStatus status =
+                organizationAuthenticator.process(mockServletRequest, mockServletResponse, mockAuthenticationContext);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockServletResponse, times(1)).sendRedirect(urlCaptor.capture());
+        String url = urlCaptor.getValue();
+        Assert.assertTrue(url.contains(REQUEST_ORG_HANDLE_PAGE_URL));
+        Assert.assertEquals(status, AuthenticatorFlowStatus.INCOMPLETE);
+    }
+
     private void mockBasicAuthenticationContext(String tenantDomain, String serviceProviderName) {
 
         when(mockAuthenticationContext.getTenantDomain()).thenReturn(tenantDomain);
@@ -945,9 +986,8 @@ public class OrganizationAuthenticatorTest {
 
     private void setupMockParam(String paramKey, String paramValue) {
 
-        Map<String, String[]> mockParamMap = new HashMap<>();
-        mockParamMap.put(paramKey, new String[]{paramValue});
-        when(mockServletRequest.getParameterMap()).thenReturn(mockParamMap);
+        mockParameterMap.put(paramKey, new String[]{paramValue});
+        when(mockServletRequest.getParameterMap()).thenReturn(mockParameterMap);
         when(mockServletRequest.getParameter(paramKey)).thenReturn(paramValue);
     }
 
