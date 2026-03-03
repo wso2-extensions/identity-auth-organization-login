@@ -45,6 +45,10 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>log4j-over-slf4j</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.platform</groupId>
+                    <artifactId>org.eclipse.equinox.http.service.api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -225,7 +229,6 @@
                             com.nimbusds.jose.*; version="${nimbusds.osgi.version.range}",
                             net.minidev.json; version="${net.minidev.json.imp.pkg.version.range}",
                         </Import-Package>
-                        <_contract>!*</_contract>
                     </instructions>
                 </configuration>
             </plugin>
