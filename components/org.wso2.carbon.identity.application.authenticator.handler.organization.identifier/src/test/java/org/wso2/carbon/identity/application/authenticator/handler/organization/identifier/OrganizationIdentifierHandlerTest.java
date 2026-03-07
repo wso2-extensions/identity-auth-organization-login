@@ -165,7 +165,7 @@ public class OrganizationIdentifierHandlerTest {
     @Test
     public void testGetFriendlyName() {
 
-        Assert.assertEquals(organizationIdentifierHandler.getFriendlyName(), "Organization SSO");
+        Assert.assertEquals(organizationIdentifierHandler.getFriendlyName(), "SSO");
     }
 
     @Test
@@ -460,7 +460,7 @@ public class OrganizationIdentifierHandlerTest {
         AuthenticatorData data = result.get();
         Assert.assertEquals(data.getName(), "OrganizationIdentifierHandler");
         Assert.assertEquals(data.getI18nKey(), "authenticator.organization.identifier");
-        Assert.assertEquals(data.getDisplayName(), "Organization SSO");
+        Assert.assertEquals(data.getDisplayName(), "SSO");
         Assert.assertEquals(data.getPromptType(), FrameworkConstants.AuthenticatorPromptType.USER_PROMPT);
         Assert.assertEquals(data.getRequiredParams().size(), 5);
         Assert.assertEquals(data.getAuthParams().size(), 5);

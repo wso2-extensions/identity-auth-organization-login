@@ -145,6 +145,12 @@
                 <scope>provided</scope>
             </dependency>
             <dependency>
+                <groupId>org.wso2.carbon.identity.auth.organization.login</groupId>
+                <artifactId>org.wso2.carbon.identity.application.authenticator.handler.organization.identifier</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.wso2.orbit.com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
                 <version>${nimbusds.version}</version>
