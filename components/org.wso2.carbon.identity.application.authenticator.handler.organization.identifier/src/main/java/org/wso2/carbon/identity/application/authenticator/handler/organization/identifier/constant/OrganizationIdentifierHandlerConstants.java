@@ -29,7 +29,7 @@ public class OrganizationIdentifierHandlerConstants {
 
     public static final String AUTHENTICATOR_NAME = "OrganizationIdentifierHandler";
     public static final String AUTHENTICATOR_ORGANIZATION_IDENTIFIER = "authenticator.organization.identifier";
-    public static final String AUTHENTICATOR_FRIENDLY_NAME = "Organization SSO";
+    public static final String AUTHENTICATOR_FRIENDLY_NAME = "SSO";
     public static final String CONTEXT_IDENTIFIER = "sessionDataKey";
 
     public static final String EQUAL_SIGN = "=";
