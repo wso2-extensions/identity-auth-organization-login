@@ -42,6 +42,7 @@
     <modules>
         <module>components/org.wso2.carbon.identity.application.authenticator.organization.login</module>
         <module>components/org.wso2.carbon.identity.application.authenticator.handler.organization.identifier</module>
+        <module>components/org.wso2.carbon.identity.application.authentication.handler.shared.user.identifier</module>
         <module>features/org.wso2.carbon.identity.auth.organization.login.server.feature</module>
     </modules>
 
@@ -149,6 +150,22 @@
                 <artifactId>org.wso2.carbon.identity.application.authenticator.handler.organization.identifier</artifactId>
                 <version>${project.version}</version>
                 <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.auth.organization.login</groupId>
+                <artifactId>org.wso2.carbon.identity.application.authentication.handler.shared.user.identifier</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.organization.management</groupId>
+                <artifactId>org.wso2.carbon.identity.organization.management.organization.user.sharing</artifactId>
+                <version>${carbon.identity.org.mgt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wso2.carbon.identity.framework</groupId>
+                <artifactId>org.wso2.carbon.identity.base</artifactId>
+                <version>${carbon.identity.framework.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.wso2.orbit.com.nimbusds</groupId>
@@ -394,7 +411,7 @@
         <carbon.multitenancy.package.import.version.range>[4.7.0,5.0.0)
         </carbon.multitenancy.package.import.version.range>
 
-        <carbon.identity.framework.version>7.10.36</carbon.identity.framework.version>
+        <carbon.identity.framework.version>7.10.84</carbon.identity.framework.version>
         <carbon.identity.package.import.version.range>[5.20.0, 8.0.0)
         </carbon.identity.package.import.version.range>
 
