@@ -48,6 +48,7 @@ import org.wso2.carbon.identity.organization.management.service.exception.Organi
 import org.wso2.carbon.user.api.UserRealm;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
+import org.wso2.carbon.user.core.util.UserCoreUtil;
 import org.wso2.carbon.utils.DiagnosticLog;
 
 import java.io.IOException;
@@ -169,9 +170,11 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
         }
         context.setProperty(USERNAME_USER_INPUT, identifierFromRequest);
 
+        AuthenticatedUser user = new AuthenticatedUser();
         String tenantDomain = context.getTenantDomain();
         String userStoreDomain = IdentityUtil.extractDomainFromName(identifierFromRequest);
-        Optional<String> userId = resolveUserIdFromUserStore(tenantDomain, identifierFromRequest);
+        Optional<String> userId = resolveUserIdFromUserStore(tenantDomain, identifierFromRequest, userStoreDomain,
+                user);
         // To autopopulate username at later steps.
         persistUsername(context, identifierFromRequest);
 
@@ -179,14 +182,13 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
             /* User does not exist in the accessing organization.
              * Skip shared user resolution and pass the flow to the next step.
              */
-            AuthenticatedUser user = new AuthenticatedUser();
             user.setUserName(identifierFromRequest);
             context.setSubject(user);
             return;
         }
 
         // Check if the user is a shared user using OrganizationUserSharingService.
-        resolveSharedUser(userId.get(), tenantDomain, identifierFromRequest, userStoreDomain, context);
+        resolveSharedUser(userId.get(), tenantDomain, identifierFromRequest, user, context);
         if (LoggerUtils.isDiagnosticLogsEnabled() && authProcessCompletedDiagnosticLogBuilder != null) {
             authProcessCompletedDiagnosticLogBuilder
                     .resultMessage("Shared user identifier first authentication successful.")
@@ -205,7 +207,8 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
      * @return The resolved user ID.
      * @throws AuthenticationFailedException If user resolution fails.
      */
-    private Optional<String> resolveUserIdFromUserStore(String tenantDomain, String tenantAwareUsername)
+    private Optional<String> resolveUserIdFromUserStore(String tenantDomain, String tenantAwareUsername,
+                                                        String userStoreDomain, AuthenticatedUser user)
             throws AuthenticationFailedException {
 
         try {
@@ -222,9 +225,7 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
                         String.format(ErrorMessages.CANNOT_FIND_THE_USER_REALM_FOR_THE_GIVEN_TENANT.getMessage(),
                                 tenantId), User.getUserFromUserName(tenantAwareUsername));
             }
-
-            AbstractUserStoreManager userStoreManager = (AbstractUserStoreManager) userRealm.getUserStoreManager();
-            String userId = userStoreManager.getUserIDFromUserName(tenantAwareUsername);
+            String userId = searchUserInUserStores(tenantAwareUsername, userRealm, userStoreDomain, user);
             if (userId == null) {
                 if (log.isDebugEnabled()) {
                     log.debug("User does not exist in tenant: " + tenantDomain);
@@ -245,23 +246,54 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
     }
 
     /**
+     * Searches for a user across user stores within the given user realm and returns the user ID if found.
+     * If a specific user store domain is provided, the search is scoped to that domain; otherwise, the
+     * primary user store and all secondary user stores are iterated until the user is located.
+     * When the user is found, the matched user store domain is set on the {@link AuthenticatedUser} object.
+     *
+     * @param username        The tenant-aware username to search for.
+     * @param userRealm       The user realm of the tenant.
+     * @param userStoreDomain The user store domain to scope the search, or blank to search all stores.
+     * @param user            The authenticated user object to update with the resolved user store domain.
+     * @return The user ID if the user is found, or {@code null} if the user does not exist in any user store.
+     * @throws UserStoreException If an error occurs while accessing the user store.
+     */
+    private static String searchUserInUserStores(String username, UserRealm userRealm, String userStoreDomain,
+                                                 AuthenticatedUser user) throws UserStoreException {
+
+        if (StringUtils.isNotBlank(userStoreDomain)) {
+            username = UserCoreUtil.addDomainToName(username, userStoreDomain);
+        }
+
+        AbstractUserStoreManager userStoreManager = (AbstractUserStoreManager) userRealm.getUserStoreManager();
+        String userId = userStoreManager.getUserIDFromUserName(username);
+
+        while (userId == null && userStoreManager.getSecondaryUserStoreManager() != null) {
+            userStoreManager = (AbstractUserStoreManager) userStoreManager.getSecondaryUserStoreManager();
+            userId = userStoreManager.getUserIDFromUserName(username);
+        }
+
+        if (userId != null) {
+            user.setUserStoreDomain(UserCoreUtil.getDomainName(userStoreManager.getRealmConfiguration()));
+        }
+
+        return userId;
+    }
+
+    /**
      * Validates whether the given user is a shared user in the current tenant by checking
      * the user association using the {@link OrganizationUserSharingService}.
      *
      * @param userId          The user ID.
      * @param tenantDomain    The tenant domain.
      * @param username        The full username (used for error context).
-     * @param userStoreDomain The user store domain.
      * @param context         The authentication context.
      * @throws AuthenticationFailedException If the user is not a shared user or an error occurs.
      */
-    private void resolveSharedUser(String userId, String tenantDomain, String username, String userStoreDomain,
+    private void resolveSharedUser(String userId, String tenantDomain, String username, AuthenticatedUser user,
                                    AuthenticationContext context) throws AuthenticationFailedException {
 
-        AuthenticatedUser user = new AuthenticatedUser();
         user.setUserName(username);
-        user.setUserStoreDomain(userStoreDomain);
-
         try {
             OrganizationManager organizationManager = SharedUserIdentifierAuthenticatorDataHolder
                     .getInstance().getOrganizationManager();
