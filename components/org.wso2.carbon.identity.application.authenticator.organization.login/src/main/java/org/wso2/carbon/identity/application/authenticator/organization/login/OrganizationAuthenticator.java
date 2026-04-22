@@ -301,8 +301,8 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         for (Map.Entry<ClaimMapping, String> entry : userAttributes.entrySet()) {
             ClaimMapping claimMapping = entry.getKey();
             if (FrameworkConstants.USER_ORG_CLAIM.equals(claimMapping.getLocalClaim().getClaimUri()) ||
-            FrameworkConstants.ORG_ID_CLAIM.equals(claimMapping.getLocalClaim().getClaimUri())) {
-              return true;
+                    FrameworkConstants.ORG_ID_CLAIM.equals(claimMapping.getLocalClaim().getClaimUri())) {
+                return true;
             }
         }
 

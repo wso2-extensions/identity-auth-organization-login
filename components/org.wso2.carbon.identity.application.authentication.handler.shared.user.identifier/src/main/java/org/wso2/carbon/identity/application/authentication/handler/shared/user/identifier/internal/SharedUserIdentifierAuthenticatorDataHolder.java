@@ -27,7 +27,7 @@ import org.wso2.carbon.user.core.service.RealmService;
  */
 public class SharedUserIdentifierAuthenticatorDataHolder {
 
-    private static final SharedUserIdentifierAuthenticatorDataHolder instance =
+    private static final SharedUserIdentifierAuthenticatorDataHolder INSTANCE =
             new SharedUserIdentifierAuthenticatorDataHolder();
 
     private RealmService realmService;
@@ -45,7 +45,7 @@ public class SharedUserIdentifierAuthenticatorDataHolder {
      */
     public static SharedUserIdentifierAuthenticatorDataHolder getInstance() {
 
-        return instance;
+        return INSTANCE;
     }
 
     /**

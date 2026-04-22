@@ -43,7 +43,7 @@ import org.wso2.carbon.user.core.service.RealmService;
 )
 public class SharedUserIdentifierAuthenticatorServiceComponent {
 
-    private static final Log log = LogFactory.getLog(SharedUserIdentifierAuthenticatorServiceComponent.class);
+    private static final Log LOG = LogFactory.getLog(SharedUserIdentifierAuthenticatorServiceComponent.class);
 
     @Activate
     protected void activate(ComponentContext ctxt) {
@@ -52,21 +52,16 @@ public class SharedUserIdentifierAuthenticatorServiceComponent {
             SharedUserIdentifierHandler sharedUserIdentifierHandler = new SharedUserIdentifierHandler();
             ctxt.getBundleContext().registerService(ApplicationAuthenticator.class.getName(),
                     sharedUserIdentifierHandler, null);
-
-            if (log.isDebugEnabled()) {
-                log.info("SharedUserIdentifierHandler bundle is activated");
-            }
+            LOG.debug("SharedUserIdentifierHandler bundle is activated");
         } catch (Throwable e) {
-            log.error("SharedUserIdentifierHandler bundle activation Failed", e);
+            LOG.error("SharedUserIdentifierHandler bundle activation Failed", e);
         }
     }
 
     @Deactivate
     protected void deactivate(ComponentContext ctxt) {
 
-        if (log.isDebugEnabled()) {
-            log.info("SharedUserIdentifierHandler bundle is deactivated");
-        }
+        LOG.debug("SharedUserIdentifierHandler bundle is deactivated");
     }
 
     @Reference(
@@ -78,13 +73,13 @@ public class SharedUserIdentifierAuthenticatorServiceComponent {
     )
     protected void setRealmService(RealmService realmService) {
 
-        log.debug("Setting the Realm Service");
+        LOG.debug("Setting the Realm Service");
         SharedUserIdentifierAuthenticatorDataHolder.getInstance().setRealmService(realmService);
     }
 
     protected void unsetRealmService(RealmService realmService) {
 
-        log.debug("Unsetting the Realm Service");
+        LOG.debug("Unsetting the Realm Service");
         SharedUserIdentifierAuthenticatorDataHolder.getInstance().setRealmService(null);
     }
 
@@ -98,9 +93,7 @@ public class SharedUserIdentifierAuthenticatorServiceComponent {
     protected void setOrganizationUserSharingService(
             OrganizationUserSharingService organizationUserSharingService) {
 
-        if (log.isDebugEnabled()) {
-            log.debug("Setting the organization user sharing service.");
-        }
+        LOG.debug("Setting the organization user sharing service.");
         SharedUserIdentifierAuthenticatorDataHolder.getInstance()
                 .setOrganizationUserSharingService(organizationUserSharingService);
     }
@@ -108,9 +101,7 @@ public class SharedUserIdentifierAuthenticatorServiceComponent {
     protected void unsetOrganizationUserSharingService(
             OrganizationUserSharingService organizationUserSharingService) {
 
-        if (log.isDebugEnabled()) {
-            log.debug("Unsetting the organization user sharing service.");
-        }
+        LOG.debug("Unsetting the organization user sharing service.");
         SharedUserIdentifierAuthenticatorDataHolder.getInstance().setOrganizationUserSharingService(null);
     }
 
@@ -123,17 +114,13 @@ public class SharedUserIdentifierAuthenticatorServiceComponent {
     )
     protected void setOrganizationManager(OrganizationManager organizationManager) {
 
-        if (log.isDebugEnabled()) {
-            log.debug("Setting the organization manager service.");
-        }
+        LOG.debug("Setting the organization manager service.");
         SharedUserIdentifierAuthenticatorDataHolder.getInstance().setOrganizationManager(organizationManager);
     }
 
     protected void unsetOrganizationManager(OrganizationManager organizationManager) {
 
-        if (log.isDebugEnabled()) {
-            log.debug("Unsetting the organization manager service.");
-        }
+        LOG.debug("Unsetting the organization manager service.");
         SharedUserIdentifierAuthenticatorDataHolder.getInstance().setOrganizationManager(null);
     }
 }

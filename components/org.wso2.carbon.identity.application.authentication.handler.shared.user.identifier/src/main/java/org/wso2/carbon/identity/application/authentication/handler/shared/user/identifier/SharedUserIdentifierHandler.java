@@ -81,7 +81,7 @@ import static org.wso2.carbon.identity.application.authentication.handler.shared
 public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticator
         implements AuthenticationFlowHandler {
 
-    private static final Log log = LogFactory.getLog(SharedUserIdentifierHandler.class);
+    private static final Log LOG = LogFactory.getLog(SharedUserIdentifierHandler.class);
 
     @Override
     public boolean canHandle(HttpServletRequest request) {
@@ -131,11 +131,10 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
         try {
             response.sendRedirect(buildRedirectURL(context));
         } catch (IOException e) {
-            if (log.isDebugEnabled()) {
-                log.debug(getName() + " failed while initiating the authentication request.", e);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(getName() + " failed while initiating the authentication request.", e);
             }
-            throw new AuthenticationFailedException(ErrorMessages.SYSTEM_ERROR_WHILE_AUTHENTICATING.getCode(),
-                    e.getMessage(), User.getUserFromUserName(request.getParameter(USER_NAME)), e);
+            throw new AuthenticationFailedException(ErrorMessages.SYSTEM_ERROR_WHILE_AUTHENTICATING.getMessage(), e);
         }
     }
 
@@ -194,7 +193,7 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
                     .resultMessage("Shared user identifier first authentication successful.")
                     .inputParam(LogConstants.InputKeys.USER, LoggerUtils.isLogMaskingEnable
                             ? LoggerUtils.getMaskedContent(identifierFromRequest) : identifierFromRequest)
-                    .inputParam(LogConstants.InputKeys.USER_ID, userId);
+                    .inputParam(LogConstants.InputKeys.USER_ID, userId.get());
             LoggerUtils.triggerDiagnosticLogEvent(authProcessCompletedDiagnosticLogBuilder);
         }
     }
@@ -217,8 +216,8 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
             UserRealm userRealm = SharedUserIdentifierAuthenticatorDataHolder.getInstance().getRealmService()
                     .getTenantUserRealm(tenantId);
             if (userRealm == null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Cannot find the user realm for the tenant ID: " + tenantId);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Cannot find the user realm for the tenant ID: " + tenantId);
                 }
                 throw new AuthenticationFailedException(
                         ErrorMessages.CANNOT_FIND_THE_USER_REALM_FOR_THE_GIVEN_TENANT.getCode(),
@@ -227,16 +226,16 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
             }
             String userId = searchUserInUserStores(tenantAwareUsername, userRealm, userStoreDomain, user);
             if (userId == null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("User does not exist in tenant: " + tenantDomain);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("User does not exist in tenant: " + tenantDomain);
                 }
                 return Optional.empty();
             }
 
             return Optional.of(userId);
         } catch (UserStoreException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("SharedUserIdentifierHandler failed while trying to authenticate.", e);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("SharedUserIdentifierHandler failed while trying to authenticate.", e);
             }
 
             throw new AuthenticationFailedException(
@@ -288,7 +287,7 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
      * @param tenantDomain    The tenant domain.
      * @param username        The full username (used for error context).
      * @param context         The authentication context.
-     * @throws AuthenticationFailedException If the user is not a shared user or an error occurs.
+     * @throws AuthenticationFailedException If an error occurs while resolving the shared user.
      */
     private void resolveSharedUser(String userId, String tenantDomain, String username, AuthenticatedUser user,
                                    AuthenticationContext context) throws AuthenticationFailedException {
@@ -298,36 +297,33 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
             OrganizationManager organizationManager = SharedUserIdentifierAuthenticatorDataHolder
                     .getInstance().getOrganizationManager();
             String organizationId = organizationManager.resolveOrganizationId(tenantDomain);
-            if (StringUtils.isBlank(organizationId)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Unable to resolve organization ID for tenant: " + tenantDomain);
-                }
-                throw new AuthenticationFailedException(ErrorMessages.ORGANIZATION_MGT_EXCEPTION.getCode(),
-                        "Unable to resolve organization ID for tenant: " + tenantDomain,
-                        User.getUserFromUserName(username));
-            }
-
             OrganizationUserSharingService userSharingService = SharedUserIdentifierAuthenticatorDataHolder
                     .getInstance().getOrganizationUserSharingService();
             UserAssociation userAssociation = userSharingService.getUserAssociation(userId, organizationId);
             if (userAssociation != null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("User with ID: " + userId + " is confirmed as a shared user in organization: "
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("User with ID: " + userId + " is confirmed as a shared user in organization: "
                             + organizationId + " (associated user ID: " + userAssociation.getAssociatedUserId()
                             + ", resident org: " + userAssociation.getUserResidentOrganizationId() + ")");
                 }
 
+                /*
+                 * If the user is confirmed as a shared user, update the authenticated user to reflect that they are
+                 * accessing a sub-organization. The authenticated user is treated as a shared user in the framework
+                 * only when these properties are set by this handler.
+                 */
                 user.setUserResidentOrganization(userAssociation.getUserResidentOrganizationId());
                 user.setAccessingOrganization(organizationManager.resolveOrganizationId(context.getTenantDomain()));
                 user.setTenantDomain(organizationManager.resolveTenantDomain(
                         userAssociation.getUserResidentOrganizationId()));
+                user.setSharedUserId(userId);
                 user.setSharedUser(true);
             }
 
             context.setSubject(user);
         } catch (OrganizationManagementException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("SharedUserIdentifierHandler failed while checking shared user status.", e);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("SharedUserIdentifierHandler failed while checking shared user status.", e);
             }
             throw new AuthenticationFailedException(ErrorMessages.ORGANIZATION_MGT_EXCEPTION.getCode(),
                     e.getMessage(), User.getUserFromUserName(username), e);

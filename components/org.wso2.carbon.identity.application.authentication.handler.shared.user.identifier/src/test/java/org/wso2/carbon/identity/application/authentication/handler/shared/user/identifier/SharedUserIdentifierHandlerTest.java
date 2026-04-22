@@ -48,6 +48,7 @@ import org.wso2.carbon.identity.organization.management.service.exception.Organi
 import org.wso2.carbon.user.api.UserRealm;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
+import org.wso2.carbon.user.core.config.RealmConfiguration;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.user.core.tenant.TenantManager;
 
@@ -105,6 +106,8 @@ public class SharedUserIdentifierHandlerTest {
     private OrganizationManager organizationManager;
     @Mock
     private OrganizationUserSharingService organizationUserSharingService;
+    @Mock
+    private RealmConfiguration realmConfiguration;
 
     private AutoCloseable closeable;
     private MockedStatic<SharedUserIdentifierAuthenticatorDataHolder> dataHolderStatic;
@@ -388,5 +391,8 @@ public class SharedUserIdentifierHandlerTest {
         when(tenantManager.getTenantId(TEST_TENANT_DOMAIN)).thenReturn(TEST_TENANT_ID);
         when(realmService.getTenantUserRealm(TEST_TENANT_ID)).thenReturn(userRealm);
         when(userRealm.getUserStoreManager()).thenReturn(userStoreManager);
+        when(userStoreManager.getRealmConfiguration()).thenReturn(realmConfiguration);
+        when(realmConfiguration.getUserStoreProperty(anyString())).thenReturn(TEST_USER_STORE_DOMAIN);
+        when(userStoreManager.getSecondaryUserStoreManager()).thenReturn(null);
     }
 }
