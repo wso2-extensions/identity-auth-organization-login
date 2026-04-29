@@ -6,7 +6,7 @@
  *  in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing,
  *  software distributed under the License is distributed on an
@@ -40,7 +40,6 @@ import org.wso2.carbon.identity.application.authentication.handler.shared.user.i
 import org.wso2.carbon.identity.application.common.model.User;
 import org.wso2.carbon.identity.central.log.mgt.utils.LogConstants;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
-import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.organization.management.organization.user.sharing.OrganizationUserSharingService;
 import org.wso2.carbon.identity.organization.management.organization.user.sharing.models.UserAssociation;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
@@ -171,9 +170,7 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
 
         AuthenticatedUser user = new AuthenticatedUser();
         String tenantDomain = context.getTenantDomain();
-        String userStoreDomain = IdentityUtil.extractDomainFromName(identifierFromRequest);
-        Optional<String> userId = resolveUserIdFromUserStore(tenantDomain, identifierFromRequest, userStoreDomain,
-                user);
+        Optional<String> userId = resolveUserIdFromUserStore(tenantDomain, identifierFromRequest, user);
         // To autopopulate username at later steps.
         persistUsername(context, identifierFromRequest);
 
@@ -202,12 +199,12 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
      * Resolves the user ID from the user store for the given tenant domain and username.
      *
      * @param tenantDomain        The tenant domain.
-     * @param tenantAwareUsername The tenant aware username.
-     * @return The resolved user ID.
+     * @param username            The username.
+     * @return                    The resolved user ID.
      * @throws AuthenticationFailedException If user resolution fails.
      */
-    private Optional<String> resolveUserIdFromUserStore(String tenantDomain, String tenantAwareUsername,
-                                                        String userStoreDomain, AuthenticatedUser user)
+    private Optional<String> resolveUserIdFromUserStore(String tenantDomain, String username,
+                                                        AuthenticatedUser user)
             throws AuthenticationFailedException {
 
         try {
@@ -222,9 +219,9 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
                 throw new AuthenticationFailedException(
                         ErrorMessages.CANNOT_FIND_THE_USER_REALM_FOR_THE_GIVEN_TENANT.getCode(),
                         String.format(ErrorMessages.CANNOT_FIND_THE_USER_REALM_FOR_THE_GIVEN_TENANT.getMessage(),
-                                tenantId), User.getUserFromUserName(tenantAwareUsername));
+                                tenantId), User.getUserFromUserName(username));
             }
-            String userId = searchUserInUserStores(tenantAwareUsername, userRealm, userStoreDomain, user);
+            String userId = searchUserInUserStores(username, userRealm, user);
             if (userId == null) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("User does not exist in tenant: " + tenantDomain);
@@ -240,7 +237,7 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
 
             throw new AuthenticationFailedException(
                     ErrorMessages.USER_STORE_EXCEPTION_WHILE_TRYING_TO_AUTHENTICATE.getCode(),
-                    e.getMessage(), User.getUserFromUserName(tenantAwareUsername), e);
+                    e.getMessage(), User.getUserFromUserName(username), e);
         }
     }
 
@@ -250,19 +247,14 @@ public class SharedUserIdentifierHandler extends AbstractApplicationAuthenticato
      * primary user store and all secondary user stores are iterated until the user is located.
      * When the user is found, the matched user store domain is set on the {@link AuthenticatedUser} object.
      *
-     * @param username        The tenant-aware username to search for.
+     * @param username        The username to search for.
      * @param userRealm       The user realm of the tenant.
-     * @param userStoreDomain The user store domain to scope the search, or blank to search all stores.
      * @param user            The authenticated user object to update with the resolved user store domain.
      * @return The user ID if the user is found, or {@code null} if the user does not exist in any user store.
      * @throws UserStoreException If an error occurs while accessing the user store.
      */
-    private static String searchUserInUserStores(String username, UserRealm userRealm, String userStoreDomain,
-                                                 AuthenticatedUser user) throws UserStoreException {
-
-        if (StringUtils.isNotBlank(userStoreDomain)) {
-            username = UserCoreUtil.addDomainToName(username, userStoreDomain);
-        }
+    private static String searchUserInUserStores(String username, UserRealm userRealm, AuthenticatedUser user)
+            throws UserStoreException {
 
         AbstractUserStoreManager userStoreManager = (AbstractUserStoreManager) userRealm.getUserStoreManager();
         String userId = userStoreManager.getUserIDFromUserName(username);
