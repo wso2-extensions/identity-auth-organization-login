@@ -286,11 +286,27 @@ public class OrganizationAuthenticator extends OpenIDConnectAuthenticator {
         if (!context.getProperties().containsKey(ORGANIZATION_LOGIN_FAILURE)) {
             super.processAuthenticationResponse(request, response, context);
 
-            // Add organization name to the user attributes.
-            context.getSubject().getUserAttributes()
-                    .put(ClaimMapping.build(USER_ORGANIZATION_CLAIM, USER_ORGANIZATION_CLAIM, null, false),
-                            context.getAuthenticatorProperties().get(ORGANIZATION_ATTRIBUTE));
+            // Check if the resident organization can be resolved via user attributes from federated response.
+            // If not, set the user organization in the user attributes to be used by downstream services.
+            if (!canResolveResidentOrganizationViaAttributes(context.getSubject().getUserAttributes())) {
+                context.getSubject().getUserAttributes()
+                        .put(ClaimMapping.build(USER_ORGANIZATION_CLAIM, USER_ORGANIZATION_CLAIM, null, false),
+                                context.getAuthenticatorProperties().get(ORGANIZATION_ATTRIBUTE));
+            }
         }
+    }
+
+    private boolean canResolveResidentOrganizationViaAttributes(Map<ClaimMapping, String> userAttributes) {
+
+        for (Map.Entry<ClaimMapping, String> entry : userAttributes.entrySet()) {
+            ClaimMapping claimMapping = entry.getKey();
+            if (FrameworkConstants.USER_ORG_CLAIM.equals(claimMapping.getLocalClaim().getClaimUri()) ||
+                    FrameworkConstants.ORG_ID_CLAIM.equals(claimMapping.getLocalClaim().getClaimUri())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
